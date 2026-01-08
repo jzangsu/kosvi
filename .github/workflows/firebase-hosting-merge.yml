@@ -8,11 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # 빌드 과정이 없는 단순 HTML이므로 아래 줄은 주석(#) 처리했습니다.
-      # - run: npm ci && npm run build
+      # 빌드가 필요 없는 구조이므로 빌드 명령은 제외했습니다.
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI }}
           channelId: live
-          projectId: kosvi-manager-872f2 # 법인장님의 프로젝트 ID입니다.
+          projectId: kosvi-manager-872f2
