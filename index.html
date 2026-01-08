@@ -28,6 +28,7 @@
             .print-only { display: block !important; }
             body { background: white; height: auto; overflow: visible; }
             #content-area { padding: 0; overflow: visible; }
+            .page-break { page-break-before: always; }
         }
     </style>
 </head>
@@ -110,6 +111,9 @@
                 <button onclick="switchTab('estimate')" id="btn-estimate" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 text-slate-300">
                     <i data-lucide="file-text" class="w-5 h-5"></i> <span>견적서 작성</span>
                 </button>
+                <button onclick="switchTab('schedule')" id="btn-schedule" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 text-slate-300">
+                    <i data-lucide="map" class="w-5 h-5"></i> <span>일정표 작성</span>
+                </button>
             </div>
 
             <div class="p-6 border-t border-white/10">
@@ -161,6 +165,38 @@
             { id: 'BK003', customer: '임창호', tour: '호치민-무이네 투어', date: '2024-03-13', price: 75400000, status: 'Completed', payment: 'Paid' },
         ];
 
+        // --- Schedule Mock Data (From Excel) ---
+        let scheduleData = [
+            {
+                day: 1,
+                date: '2024-03-13 (수)',
+                location: '인천 / 호치민',
+                flight: 'KE469 09:05 / 12:40',
+                activities: [
+                    { time: '12:40', content: '호치민 탄손누트 국제 공항 도착 / 가이드 미팅', remark: '입국장 10번 기둥' },
+                    { time: '13:30', content: '중식 후 무이네로 이동 (약 2시간 30분 소요)', remark: '전용 차량' },
+                    { time: '18:00', content: '무이네 도착 및 석식', remark: '현지식' },
+                    { time: '20:00', content: '호텔 체크인 및 휴식', remark: '' }
+                ],
+                meals: { b: '기내식', l: '현지식 (쌀국수)', d: '해산물 특식' },
+                hotel: 'The Anam Mui Ne (5 Star)'
+            },
+            {
+                day: 2,
+                date: '2024-03-14 (목)',
+                location: '무이네',
+                flight: '',
+                activities: [
+                    { time: '04:30', content: '선라이즈 지프 투어 (화이트 샌듄, 레드 샌듄)', remark: '지프 차량' },
+                    { time: '08:00', content: '호텔 조식 및 휴식', remark: '' },
+                    { time: '12:00', content: '중식 및 요정의 시내 관광', remark: '' },
+                    { time: '15:00', content: '호텔 자유 시간 및 수영', remark: '' }
+                ],
+                meals: { b: '호텔식', l: '한식', d: '자유식' },
+                hotel: 'The Anam Mui Ne (5 Star)'
+            }
+        ];
+
         // --- Helper Functions ---
         const formatVND = (price) => price.toLocaleString() + ' ₫';
         const formatKRW = (price) => '₩' + price.toLocaleString();
@@ -188,16 +224,26 @@
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('main-view').classList.remove('hidden');
             
+            // 공통 버튼 초기화 (모두 보임 상태로 시작)
+            const dashboardBtn = document.getElementById('btn-dashboard');
+            const estimateBtn = document.getElementById('btn-estimate');
+            const scheduleBtn = document.getElementById('btn-schedule');
+
+            if (dashboardBtn) dashboardBtn.classList.remove('hidden');
+            if (estimateBtn) estimateBtn.classList.remove('hidden');
+            if (scheduleBtn) scheduleBtn.classList.remove('hidden');
+            
             if (currentRole === 'admin') {
-                document.getElementById('btn-dashboard').classList.remove('hidden');
-                document.getElementById('btn-estimate').classList.remove('hidden');
                 document.getElementById('user-name').innerText = "허창수 법인장";
                 document.getElementById('user-role').innerText = "Master Admin";
                 document.getElementById('user-avatar').innerText = "허";
                 switchTab('dashboard');
             } else {
-                document.getElementById('btn-dashboard').classList.add('hidden');
-                document.getElementById('btn-estimate').classList.add('hidden'); // 직원에게 견적서 숨김 (선택사항)
+                if (dashboardBtn) dashboardBtn.classList.add('hidden');
+                // 직원은 견적서/일정표 권한 여부에 따라 처리 (일단 숨김 예시)
+                if (estimateBtn) estimateBtn.classList.add('hidden'); 
+                if (scheduleBtn) scheduleBtn.classList.add('hidden');
+                
                 document.getElementById('user-name').innerText = "김직원 매니저";
                 document.getElementById('user-role').innerText = "Staff";
                 document.getElementById('user-avatar').innerText = "김";
@@ -215,7 +261,7 @@
             currentTab = tab;
             
             // UI 업데이트
-            ['dashboard', 'bookings', 'estimate'].forEach(t => {
+            ['dashboard', 'bookings', 'estimate', 'schedule'].forEach(t => {
                 const btn = document.getElementById(`btn-${t}`);
                 if(btn) btn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === t ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
             });
@@ -224,7 +270,8 @@
             
             if (tab === 'dashboard') content.innerHTML = renderDashboard();
             else if (tab === 'bookings') content.innerHTML = renderBookings();
-            else if (tab === 'estimate') renderEstimate(); // 함수 내에서 innerHTML 처리
+            else if (tab === 'estimate') renderEstimate(); 
+            else if (tab === 'schedule') renderSchedule();
             
             lucide.createIcons();
         }
@@ -248,9 +295,14 @@
                 <div class="space-y-6 max-w-7xl animate-fade-in">
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold text-slate-800">예약 통합 관리</h2>
-                        <button onclick="switchTab('estimate')" class="bg-[#1E3A8A] text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-900 transition-colors flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i> 견적서 작성 / 예약 추가
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="switchTab('estimate')" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> 견적서 작성
+                            </button>
+                            <button onclick="switchTab('schedule')" class="bg-[#1E3A8A] text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-900 transition-colors flex items-center gap-2">
+                                <i data-lucide="map" class="w-4 h-4"></i> 일정표 관리
+                            </button>
+                        </div>
                     </div>
                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <table class="w-full text-left">
@@ -284,7 +336,6 @@
             const content = document.getElementById('content-area');
             content.innerHTML = `
                 <div class="max-w-5xl mx-auto animate-fade-in pb-20">
-                    <!-- 상단 컨트롤 (인쇄 시 숨김) -->
                     <div class="flex justify-between items-center mb-6 no-print">
                         <div>
                             <h2 class="text-2xl font-bold text-slate-800">견적서 작성</h2>
@@ -300,10 +351,7 @@
                         </div>
                     </div>
 
-                    <!-- 견적서 본문 (A4 스타일) -->
                     <div class="bg-white p-10 shadow-2xl rounded-sm print:shadow-none print:p-0" id="estimate-paper">
-                        
-                        <!-- 헤더 -->
                         <div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
                             <div>
                                 <h1 class="text-3xl font-black text-[#1E3A8A] tracking-tight">ESTIMATE</h1>
@@ -316,7 +364,6 @@
                             </div>
                         </div>
 
-                        <!-- 고객 정보 입력 -->
                         <div class="grid grid-cols-2 gap-8 mb-8">
                             <div class="space-y-3">
                                 <div class="flex items-center">
@@ -342,7 +389,6 @@
                             </div>
                         </div>
 
-                        <!-- 견적 테이블 -->
                         <div class="mb-8">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -355,9 +401,7 @@
                                         <th class="p-3 bg-orange-600 w-10 text-center no-print">삭제</th>
                                     </tr>
                                 </thead>
-                                <tbody id="estimate-tbody" class="text-sm text-slate-700 divide-y divide-slate-100">
-                                    <!-- JS로 렌더링 -->
-                                </tbody>
+                                <tbody id="estimate-tbody" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
                                 <tfoot>
                                     <tr class="bg-slate-50 font-black text-slate-800 border-t-2 border-slate-200">
                                         <td colspan="4" class="p-4 text-right">총 합계 (Total Amount)</td>
@@ -371,7 +415,6 @@
                             </button>
                         </div>
 
-                        <!-- 포함/불포함 사항 -->
                         <div class="grid grid-cols-2 gap-6 mb-8 text-xs">
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h4 class="font-bold text-blue-800 mb-2">■ 포함사항 (Included)</h4>
@@ -391,14 +434,12 @@
                             </div>
                         </div>
 
-                        <!-- 하단 계좌 정보 -->
                         <div class="border-t border-slate-200 pt-6 text-center">
                             <p class="text-sm font-bold text-slate-800 mb-1">입금 계좌 (Bank Account)</p>
                             <p class="text-sm text-slate-600">신한베트남 (Shinhan Vietnam): <span class="font-bold text-[#1E3A8A]">077 - 890 - 1861</span> (예금주: HEO CHANGSU)</p>
                         </div>
                     </div>
                     
-                    <!-- 관리자용 마진 분석 (인쇄시 숨김) -->
                     <div class="mt-8 bg-slate-800 text-white p-6 rounded-xl shadow-lg no-print">
                         <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-orange-400">
                             <i data-lucide="pie-chart" class="w-5 h-5"></i> 관리자 전용 수익 분석 (Profit Analysis)
@@ -432,7 +473,7 @@
 
             tbody.innerHTML = estimateItems.map((item, index) => {
                 const itemTotal = item.price * item.qty;
-                const itemCostTotal = item.cost * item.qty; // 원가 합계
+                const itemCostTotal = item.cost * item.qty; 
                 totalPrice += itemTotal;
                 totalCost += itemCostTotal;
 
@@ -469,16 +510,154 @@
                 `;
             }).join('');
 
-            // 합계 업데이트
             document.getElementById('total-price-display').innerText = formatVND(totalPrice);
-            
-            // 관리자용 분석 업데이트
             document.getElementById('admin-total-cost').innerText = formatVND(totalCost);
             document.getElementById('admin-total-price').innerText = formatVND(totalPrice);
             const profit = totalPrice - totalCost;
             document.getElementById('admin-profit').innerText = formatVND(profit) + ` (${((profit/totalPrice)*100).toFixed(1)}%)`;
 
             lucide.createIcons();
+        }
+
+        // --- View 4: Schedule Builder (일정표 작성) ---
+        function renderSchedule() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <div class="max-w-5xl mx-auto animate-fade-in pb-20">
+                    <div class="flex justify-between items-center mb-6 no-print">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">일정표 관리</h2>
+                            <p class="text-sm text-slate-500">투어 상세 일정 및 식사/숙박 정보</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.print()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors flex items-center gap-2">
+                                <i data-lucide="printer" class="w-4 h-4"></i> 인쇄 / PDF 저장
+                            </button>
+                            <button onclick="addDay()" class="px-4 py-2 bg-[#F97316] text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors shadow-lg flex items-center gap-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i> 1일 추가
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-10 shadow-2xl rounded-sm print:shadow-none print:p-0">
+                        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
+                            <div>
+                                <h1 class="text-3xl font-black text-[#1E3A8A] tracking-tight">ITINERARY</h1>
+                                <p class="text-sm font-bold text-slate-400 mt-1">여행 일정표 / SCHEDULE</p>
+                            </div>
+                            <div class="text-right">
+                                <h3 class="text-lg font-black text-slate-800">KOSVI CO.,LTD</h3>
+                                <p class="text-xs text-slate-500 mt-1">Authorized Tour Operator</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-8" id="schedule-container">
+                            <!-- JS로 일정 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            renderScheduleDays();
+        }
+
+        function renderScheduleDays() {
+            const container = document.getElementById('schedule-container');
+            if(!container) return;
+
+            container.innerHTML = scheduleData.map((day, dIndex) => `
+                <div class="border border-slate-200 rounded-lg overflow-hidden break-inside-avoid">
+                    <div class="bg-[#1E3A8A] text-white p-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-lg bg-[#F97316] px-2 py-0.5 rounded">Day ${day.day}</span>
+                            <input type="text" value="${day.date}" class="bg-transparent font-bold focus:outline-none text-white w-40" placeholder="날짜 입력">
+                            <span class="opacity-50">|</span>
+                            <input type="text" value="${day.location}" class="bg-transparent focus:outline-none text-white w-40" placeholder="지역 입력">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="plane" class="w-4 h-4 text-orange-400"></i>
+                            <input type="text" value="${day.flight}" class="bg-transparent text-right text-xs focus:outline-none text-blue-200 placeholder-blue-300 w-48" placeholder="항공편 정보">
+                        </div>
+                    </div>
+                    
+                    <div class="p-4">
+                        <table class="w-full text-sm mb-4">
+                            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2 px-2 w-20 text-center">시간</th>
+                                    <th class="py-2 px-2 text-left">일정 내용</th>
+                                    <th class="py-2 px-2 w-48 text-left">비고</th>
+                                    <th class="w-8 no-print"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${day.activities.map((act, aIndex) => `
+                                    <tr class="border-b border-slate-100 last:border-0">
+                                        <td class="py-2 px-2 text-center">
+                                            <input type="text" value="${act.time}" class="w-full text-center bg-transparent focus:outline-none font-bold text-slate-700">
+                                        </td>
+                                        <td class="py-2 px-2">
+                                            <input type="text" value="${act.content}" class="w-full bg-transparent focus:outline-none text-slate-800">
+                                        </td>
+                                        <td class="py-2 px-2">
+                                            <input type="text" value="${act.remark}" class="w-full bg-transparent focus:outline-none text-slate-500 text-xs">
+                                        </td>
+                                        <td class="text-center no-print">
+                                            <button onclick="removeActivity(${dIndex}, ${aIndex})" class="text-slate-300 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <button onclick="addActivity(${dIndex})" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-4 no-print">
+                            <i data-lucide="plus-circle" class="w-3 h-3"></i> 일정 추가
+                        </button>
+
+                        <div class="bg-slate-50 rounded p-3 text-xs grid grid-cols-4 gap-4 items-center border border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-500 w-8">조식</span>
+                                <input type="text" value="${day.meals.b}" class="bg-transparent border-b border-slate-200 w-full focus:outline-none">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-500 w-8">중식</span>
+                                <input type="text" value="${day.meals.l}" class="bg-transparent border-b border-slate-200 w-full focus:outline-none">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-500 w-8">석식</span>
+                                <input type="text" value="${day.meals.d}" class="bg-transparent border-b border-slate-200 w-full focus:outline-none">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="bed-double" class="w-4 h-4 text-blue-800"></i>
+                                <input type="text" value="${day.hotel}" class="bg-transparent font-bold text-blue-900 w-full focus:outline-none" placeholder="호텔 정보 입력">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        function addDay() {
+            scheduleData.push({
+                day: scheduleData.length + 1,
+                date: '',
+                location: '',
+                flight: '',
+                activities: [{ time: '09:00', content: '', remark: '' }],
+                meals: { b: '', l: '', d: '' },
+                hotel: ''
+            });
+            renderScheduleDays();
+        }
+
+        function addActivity(dayIndex) {
+            scheduleData[dayIndex].activities.push({ time: '', content: '', remark: '' });
+            renderScheduleDays();
+        }
+
+        function removeActivity(dayIndex, actIndex) {
+            scheduleData[dayIndex].activities.splice(actIndex, 1);
+            renderScheduleDays();
         }
 
         function addItem() {
@@ -498,10 +677,9 @@
         }
 
         function saveEstimate() {
-            const customerName = document.querySelector('input[value="임창호 님"]').value; // 데모용
+            const customerName = document.querySelector('input[value="임창호 님"]').value; 
             const total = estimateItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
             
-            // 예약 리스트에 추가 (Mock)
             bookings.unshift({
                 id: 'BK00' + (bookings.length + 1),
                 customer: customerName.replace(' 님',''),
@@ -516,7 +694,6 @@
             switchTab('bookings');
         }
 
-        // 초기화
         lucide.createIcons();
     </script>
 </body>
