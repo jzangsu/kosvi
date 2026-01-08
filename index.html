@@ -60,7 +60,7 @@
 
     <script type="text/babel">
         /**
-         * [🚀 PROJECT MASTER GUIDE v20.0]
+         * [🚀 PROJECT MASTER GUIDE v21.0]
          * - 기능: PC/Mobile 반응형, 엑셀 자동계산, 달력, AM/PM, 한-베 병기, 청구서 스타일 견적서
          * - 사용자: 허창수 법인장 (KOSVI)
          * - 계정: admin(1234), staff1(1111), staff2(2222)
@@ -160,6 +160,11 @@
                 };
                 setTrips([newTrip, ...trips]);
                 setSelectedTrip(newTrip);
+            };
+
+            const updateTrip = (updated) => {
+                setTrips(trips.map(t => t.id === updated.id ? updated : t));
+                setSelectedTrip(updated);
             };
 
             // 숫자 입력 핸들러 (콤마 자동)
@@ -321,7 +326,7 @@
                             <div className="flex items-center gap-3">
                                 <div className="relative hidden md:block">
                                     <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 outline-none text-sm w-48 focus:w-64 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 outline-none text-sm w-32 md:w-64 focus:w-full transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                                 {userRole === 'admin' && <button onClick={handleAddTrip} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all"><Icon name="plus" size={18} /> <span className="hidden md:inline">New</span></button>}
                             </div>
