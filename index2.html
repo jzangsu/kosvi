@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOSVI 여행사 견적서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .shadow-lg { box-shadow: none !important; }
+        }
+        .editable:empty:before {
+            content: attr(placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden" id="invoice">
+        <!-- Top Bar (Actions) -->
+        <div class="bg-indigo-900 text-white p-4 flex justify-between items-center no-print">
+            <h1 class="font-bold text-lg"><i class="fas fa-plane-departure mr-2"></i>KOSVI 견적서 시스템</h1>
+            <div class="space-x-2">
+                <button onclick="window.print()" class="bg-white text-indigo-900 px-4 py-2 rounded font-medium hover:bg-gray-100 transition shadow">
+                    <i class="fas fa-print mr-1"></i> 출력 / PDF 저장
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="p-8 md:p-12">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-12 border-b-2 border-indigo-900 pb-8">
+                <div>
+                    <h1 class="text-4xl font-bold text-indigo-900 mb-2">견 적 서</h1>
+                    <p class="text-gray-500 uppercase tracking-widest font-semibold">QUOTATION</p>
+                </div>
+                <div class="mt-4 md:mt-0 text-right">
+                    <div class="text-gray-600 mb-1">견적일자: <span class="font-bold text-gray-800" contenteditable="true">2026. 01. 06</span></div>
+                    <div class="text-gray-600">견적번호: <span class="font-bold text-gray-800" contenteditable="true">QT-20260106-001</span></div>
+                </div>
+            </div>
+
+            <!-- Supplier & Receiver Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <!-- Supplier (KOSVI) -->
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                    <h3 class="text-indigo-900 font-bold text-lg mb-4 border-b border-gray-300 pb-2">공급자 (Supplier)</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex"><span class="w-20 text-gray-500">상호명</span> <span class="font-bold">KOSVI (코스비 여행사)</span></div>
+                        <div class="flex"><span class="w-20 text-gray-500">대표자</span> <span>허창수 (Heo Chang-su)</span></div>
+                        <div class="flex"><span class="w-20 text-gray-500">연락처</span> <span>077 890 1861</span></div>
+                        <div class="flex"><span class="w-20 text-gray-500">이메일</span> <span>admin@daewoongvina.com</span></div>
+                        <div class="flex"><span class="w-20 text-gray-500">주소</span> <span class="flex-1" contenteditable="true" placeholder="주소를 입력하세요">베트남 호치민시 ...</span></div>
+                    </div>
+                </div>
+
+                <!-- Receiver (Client) -->
+                <div class="p-6 rounded-lg border border-indigo-100 bg-indigo-50">
+                    <h3 class="text-indigo-900 font-bold text-lg mb-4 border-b border-indigo-200 pb-2">받는 분 (Customer)</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center"><span class="w-20 text-gray-500">고객명</span> <div class="flex-1 border-b border-indigo-200 bg-transparent outline-none py-1 editable" contenteditable="true" placeholder="고객 성함 또는 회사명"></div></div>
+                        <div class="flex items-center"><span class="w-20 text-gray-500">담당자</span> <div class="flex-1 border-b border-indigo-200 bg-transparent outline-none py-1 editable" contenteditable="true" placeholder="담당자 성함"></div></div>
+                        <div class="flex items-center"><span class="w-20 text-gray-500">연락처</span> <div class="flex-1 border-b border-indigo-200 bg-transparent outline-none py-1 editable" contenteditable="true" placeholder="전화번호"></div></div>
+                        <div class="flex items-center"><span class="w-20 text-gray-500">이메일</span> <div class="flex-1 border-b border-indigo-200 bg-transparent outline-none py-1 editable" contenteditable="true" placeholder="이메일 주소"></div></div>
+                        <div class="flex items-center"><span class="w-20 text-gray-500">여행기간</span> <div class="flex-1 border-b border-indigo-200 bg-transparent outline-none py-1 editable" contenteditable="true" placeholder="YYYY.MM.DD ~ YYYY.MM.DD"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="mb-12">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-indigo-900 text-white text-sm">
+                            <th class="py-3 px-4 rounded-tl-lg font-medium w-12 text-center">No.</th>
+                            <th class="py-3 px-4 font-medium">품목 (Description)</th>
+                            <th class="py-3 px-4 font-medium w-24 text-center">수량 (Qty)</th>
+                            <th class="py-3 px-4 font-medium w-32 text-right">단가 (Price)</th>
+                            <th class="py-3 px-4 rounded-tr-lg font-medium w-32 text-right">금액 (Amount)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-gray-700" id="items-body">
+                        <!-- Row 1 -->
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-center">1</td>
+                            <td class="py-3 px-4" contenteditable="true">항공권 (인천 - 호치민 왕복)</td>
+                            <td class="py-3 px-4 text-center" contenteditable="true">1</td>
+                            <td class="py-3 px-4 text-right" contenteditable="true">0</td>
+                            <td class="py-3 px-4 text-right font-medium" contenteditable="true">0</td>
+                        </tr>
+                        <!-- Row 2 -->
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-center">2</td>
+                            <td class="py-3 px-4" contenteditable="true">호텔 숙박 (4박 5일)</td>
+                            <td class="py-3 px-4 text-center" contenteditable="true">1</td>
+                            <td class="py-3 px-4 text-right" contenteditable="true">0</td>
+                            <td class="py-3 px-4 text-right font-medium" contenteditable="true">0</td>
+                        </tr>
+                         <!-- Row 3 -->
+                         <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-center">3</td>
+                            <td class="py-3 px-4" contenteditable="true">차량 지원 (16인승, 기사포함)</td>
+                            <td class="py-3 px-4 text-center" contenteditable="true">1</td>
+                            <td class="py-3 px-4 text-right" contenteditable="true">0</td>
+                            <td class="py-3 px-4 text-right font-medium" contenteditable="true">0</td>
+                        </tr>
+                        <!-- Row 4 -->
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-center">4</td>
+                            <td class="py-3 px-4" contenteditable="true">비자 발급 수수료</td>
+                            <td class="py-3 px-4 text-center" contenteditable="true">1</td>
+                            <td class="py-3 px-4 text-right" contenteditable="true">0</td>
+                            <td class="py-3 px-4 text-right font-medium" contenteditable="true">0</td>
+                        </tr>
+                        <!-- Row 5 -->
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-center">5</td>
+                            <td class="py-3 px-4" contenteditable="true">기타 경비 (가이드 등)</td>
+                            <td class="py-3 px-4 text-center" contenteditable="true">1</td>
+                            <td class="py-3 px-4 text-right" contenteditable="true">0</td>
+                            <td class="py-3 px-4 text-right font-medium" contenteditable="true">0</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td colspan="4" class="py-4 px-4 text-right font-bold text-gray-600">합계 (Total):</td>
+                            <td class="py-4 px-4 text-right font-bold text-xl text-indigo-900" contenteditable="true">₩0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div class="mt-2 text-right no-print">
+                    <p class="text-xs text-gray-500">* 표 안의 내용을 클릭하여 직접 수정할 수 있습니다.</p>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-12">
+                <h4 class="font-bold text-gray-800 mb-2">비고 (Remarks)</h4>
+                <div class="w-full p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm min-h-[100px]" contenteditable="true">
+                    <p>1. 위 견적은 항공 좌석 상황 및 환율 변동에 따라 변경될 수 있습니다.</p>
+                    <p>2. 유효기간: 견적일로부터 7일간 유효합니다.</p>
+                    <p>3. 결제조건: 예약 시 50%, 출발 7일 전 잔금 완납.</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center pt-8 border-t border-gray-200">
+                <h2 class="text-2xl font-bold text-indigo-900 mb-2">KOSVI TRAVEL</h2>
+                <p class="text-gray-500 text-sm mb-6">항상 최상의 서비스로 모시겠습니다.</p>
+                <div class="inline-block border-2 border-indigo-900 px-8 py-3 rounded-lg">
+                    <p class="font-bold text-indigo-900 text-sm">확인 (Authorized Signature)</p>
+                    <div class="h-16 flex items-end justify-center">
+                        <span class="font-script text-2xl text-gray-400 opacity-50">(인)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple auto-calculation logic could be added here, 
+        // but for a flexible quotation, manual entry is often preferred to handle various currencies/formats.
+        // This script allows contenteditable areas to act more like inputs.
+    </script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -454,3 +455,703 @@
     </script>
 </body>
 </html>
+=======
+import React, { useState, useEffect } from 'react';
+import { Plane, Hotel, Car, Map, User, UserCheck, DollarSign, Calculator, FileText, Settings, Eye, Globe, Calendar, ChevronDown, ChevronUp, Plus, Trash2, Clock, Zap, Utensils, Printer, Save, Search, X, RefreshCw } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, collection, addDoc, updateDoc, doc, getDocs, deleteDoc, query, orderBy } from 'firebase/firestore';
+
+// --- Firebase Configuration & Initialization ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+const KosviTravelApp = () => {
+  // --- State Management ---
+  const [user, setUser] = useState(null);
+  const [mode, setMode] = useState('admin'); // 'admin' or 'customer'
+  const [currency, setCurrency] = useState('VND'); 
+  const [rates, setRates] = useState({ VND: 1, KRW: 0.055, USD: 0.00004 });
+  
+  // 데이터 로딩 및 저장 상태
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [savedEstimates, setSavedEstimates] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
+
+  // 여행 데이터
+  const [data, setData] = useState({
+    id: null, // Firestore Document ID
+    customerName: '',
+    startDate: getTodayStr(),
+    endDate: getTodayStr(),
+    flight: {
+      dept: { from: '인천(ICN)', to: '호치민(SGN)', flightNo: '', depTime: '', arrTime: '' },
+      ret: { from: '호치민(SGN)', to: '인천(ICN)', flightNo: '', depTime: '', arrTime: '' }
+    },
+    schedule: [
+      {
+        date: getTodayStr(),
+        items: [
+          { id: Date.now(), time: '10:30', type: 'fast_track', title: 'VIP 패스트트랙 입국 수속', detail: '직원 미팅 후 신속 입국', cost: 500000 },
+          { id: Date.now()+1, time: '11:00', type: 'vehicle', title: '전용 픽업 (16인승 리무진)', detail: '공항 → 호텔 이동', cost: 1000000 },
+        ] 
+      }
+    ],
+    margin: 0, 
+  });
+
+  // --- Authentication ---
+  useEffect(() => {
+    const initAuth = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  // --- Firebase Operations ---
+
+  // 1. 저장하기 (Create or Update)
+  const handleSave = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    if (!data.customerName) {
+      alert("고객명은 필수입니다.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const collectionRef = collection(db, 'artifacts', appId, 'users', user.uid, 'estimates');
+      
+      const saveData = {
+        ...data,
+        updatedAt: new Date().toISOString() // 저장 시간 기록
+      };
+      
+      if (data.id) {
+        // 기존 데이터 수정
+        const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'estimates', data.id);
+        await updateDoc(docRef, saveData);
+        alert(`[${data.customerName}] 님 견적이 수정되었습니다.`);
+      } else {
+        // 새 데이터 저장
+        const docRef = await addDoc(collectionRef, {
+          ...saveData,
+          createdAt: new Date().toISOString()
+        });
+        setData(prev => ({ ...prev, id: docRef.id })); // ID 업데이트
+        alert(`[${data.customerName}] 님 견적이 새로 저장되었습니다.`);
+      }
+    } catch (error) {
+      console.error("Error saving document: ", error);
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 2. 불러오기 (Read All & Filter)
+  const fetchEstimates = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const collectionRef = collection(db, 'artifacts', appId, 'users', user.uid, 'estimates');
+      const querySnapshot = await getDocs(collectionRef);
+      
+      const estimates = [];
+      querySnapshot.forEach((doc) => {
+        estimates.push({ id: doc.id, ...doc.data() });
+      });
+
+      // 최신순 정렬 (updatedAt 기준)
+      estimates.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+      
+      setSavedEstimates(estimates);
+    } catch (error) {
+      console.error("Error fetching documents: ", error);
+      alert("목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. 삭제하기
+  const handleDelete = async (e, id) => {
+    e.stopPropagation(); // 부모 클릭 방지
+    if (!window.confirm("정말 이 견적서를 삭제하시겠습니까?")) return;
+
+    try {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'estimates', id));
+      // 목록에서 즉시 제거
+      setSavedEstimates(prev => prev.filter(item => item.id !== id));
+      if (data.id === id) {
+        // 현재 보고 있는 문서가 삭제되면 초기화
+        resetData();
+      }
+    } catch (error) {
+      alert("삭제 실패");
+    }
+  };
+
+  // 검색 모달 열기
+  const openSearchModal = () => {
+    setIsSearchOpen(true);
+    fetchEstimates();
+  };
+
+  // 견적서 선택 (Load)
+  const selectEstimate = (estimate) => {
+    // 기존 데이터 구조 호환성 체크 (flight 객체에 depTime 등이 없는 경우 대비)
+    const normalizedData = {
+        ...estimate,
+        flight: {
+            dept: { 
+                from: estimate.flight?.dept?.from || '', 
+                to: estimate.flight?.dept?.to || '', 
+                flightNo: estimate.flight?.dept?.flightNo || '', 
+                depTime: estimate.flight?.dept?.depTime || '', 
+                arrTime: estimate.flight?.dept?.arrTime || '' 
+            },
+            ret: { 
+                from: estimate.flight?.ret?.from || '', 
+                to: estimate.flight?.ret?.to || '', 
+                flightNo: estimate.flight?.ret?.flightNo || '', 
+                depTime: estimate.flight?.ret?.depTime || '', 
+                arrTime: estimate.flight?.ret?.arrTime || '' 
+            }
+        }
+    };
+    setData(normalizedData);
+    setIsSearchOpen(false);
+  };
+
+  // 데이터 초기화
+  const resetData = () => {
+    setData({
+      id: null,
+      customerName: '',
+      startDate: getTodayStr(),
+      endDate: getTodayStr(),
+      flight: {
+        dept: { from: '인천(ICN)', to: '호치민(SGN)', flightNo: '', depTime: '', arrTime: '' },
+        ret: { from: '호치민(SGN)', to: '인천(ICN)', flightNo: '', depTime: '', arrTime: '' }
+      },
+      schedule: [{
+        date: getTodayStr(),
+        items: [] 
+      }],
+      margin: 0, 
+    });
+  };
+
+  // --- Helpers ---
+  const getDayLabel = (dateStr) => {
+    if (!dateStr) return '';
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return days[date.getDay()];
+  };
+
+  const getDuration = (start, end) => {
+    if (!start || !end) return '';
+    const s = new Date(start);
+    const e = new Date(end);
+    const diffTime = e - s;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const nights = diffDays > 0 ? diffDays - 1 : 0;
+    return `(${nights}박 ${diffDays}일)`;
+  };
+
+  // --- Logic for Edit ---
+  const handleDateChange = (field, value) => {
+    const newData = { ...data, [field]: value };
+    const start = new Date(newData.startDate);
+    const end = new Date(newData.endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (!isNaN(diffDays) && diffDays > 0 && diffDays < 60) {
+      const newSchedule = [];
+      for (let i = 0; i < diffDays; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        
+        const existingDay = data.schedule.find(s => s.date === dateStr);
+        if (existingDay) {
+          newSchedule.push(existingDay);
+        } else {
+          newSchedule.push({
+            date: dateStr,
+            items: [] 
+          });
+        }
+      }
+      newData.schedule = newSchedule;
+    }
+    setData(newData);
+  };
+
+  const addItem = (dayIndex) => {
+    const newSchedule = [...data.schedule];
+    newSchedule[dayIndex].items.push({
+      id: Date.now(),
+      time: '',
+      type: 'etc',
+      title: '',
+      detail: '',
+      cost: 0
+    });
+    setData({ ...data, schedule: newSchedule });
+  };
+
+  const removeItem = (dayIndex, itemIndex) => {
+    const newSchedule = [...data.schedule];
+    newSchedule[dayIndex].items.splice(itemIndex, 1);
+    setData({ ...data, schedule: newSchedule });
+  };
+
+  const updateItem = (dayIndex, itemIndex, field, value) => {
+    const newSchedule = [...data.schedule];
+    newSchedule[dayIndex].items[itemIndex][field] = value;
+    setData({ ...data, schedule: newSchedule });
+  };
+
+  const totalCost = data.schedule.reduce((acc, day) => {
+    const dayCost = day.items.reduce((dAcc, item) => dAcc + parseInt(item.cost || 0), 0);
+    return acc + dayCost;
+  }, 0);
+
+  const totalPriceVND = totalCost + parseInt(data.margin || 0);
+  const convertPrice = (priceVND) => priceVND * rates[currency];
+  const formatMoney = (amount, curr) => {
+    if (curr === 'VND') return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    if (curr === 'KRW') return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+    if (curr === 'USD') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return amount;
+  };
+
+  const handleFlightChange = (type, field, value) => {
+    setData(prev => ({
+      ...prev,
+      flight: {
+        ...prev.flight,
+        [type]: { ...prev.flight[type], [field]: value }
+      }
+    }));
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const itemTypes = [
+    { id: 'fast_track', label: '패스트트랙', icon: Zap, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+    { id: 'flight', label: '항공', icon: Plane, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { id: 'hotel', label: '숙소', icon: Hotel, color: 'text-indigo-600', bg: 'bg-indigo-100' },
+    { id: 'golf', label: '골프', icon: UserCheck, color: 'text-green-600', bg: 'bg-green-100' },
+    { id: 'vehicle', label: '차량', icon: Car, color: 'text-purple-600', bg: 'bg-purple-100' },
+    { id: 'food', label: '식사', icon: Utensils, color: 'text-orange-600', bg: 'bg-orange-100' },
+    { id: 'tour', label: '투어', icon: Map, color: 'text-pink-600', bg: 'bg-pink-100' },
+    { id: 'guide', label: '가이드', icon: User, color: 'text-red-600', bg: 'bg-red-100' },
+    { id: 'etc', label: '기타', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-100' },
+  ];
+
+  // --- Sub Components ---
+
+  const ScheduleItemInput = ({ item, dayIndex, itemIndex }) => (
+    <div className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-gray-50 p-3 rounded-lg border border-gray-200 mb-2 animate-fade-in">
+        <div className="flex gap-2 w-full md:w-auto">
+          <input type="time" className="p-2 border rounded text-sm w-24" value={item.time} onChange={(e) => updateItem(dayIndex, itemIndex, 'time', e.target.value)} />
+          <select className="p-2 border rounded text-sm w-32" value={item.type} onChange={(e) => updateItem(dayIndex, itemIndex, 'type', e.target.value)}>
+            {itemTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-2">
+           <input type="text" placeholder="일정 제목" className="p-2 border rounded text-sm font-medium" value={item.title} onChange={(e) => updateItem(dayIndex, itemIndex, 'title', e.target.value)} />
+           <input type="text" placeholder="상세 내용" className="p-2 border rounded text-sm text-gray-600" value={item.detail} onChange={(e) => updateItem(dayIndex, itemIndex, 'detail', e.target.value)} />
+        </div>
+        <div className="flex gap-2 items-center w-full md:w-auto mt-2 md:mt-0">
+          <div className="relative flex-1 md:w-32">
+             <span className="absolute left-2 top-1.5 text-xs text-gray-400">₫</span>
+             <input type="number" placeholder="원가(VND)" className="w-full p-2 pl-6 border rounded text-sm text-right bg-white" value={item.cost} onChange={(e) => updateItem(dayIndex, itemIndex, 'cost', e.target.value)} />
+          </div>
+          <button onClick={() => removeItem(dayIndex, itemIndex)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+        </div>
+    </div>
+  );
+
+  const DaySection = ({ day, index }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6 overflow-hidden">
+        <div className="bg-blue-50 p-4 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="flex items-center gap-3">
+            <span className="bg-blue-900 text-white text-sm font-bold px-3 py-1 rounded-full">Day {index + 1}</span>
+            <span className="font-bold text-lg text-gray-800">{day.date} <span className="text-blue-600 text-base">({getDayLabel(day.date)})</span></span>
+            <span className="text-sm text-gray-500">({day.items.length}개 일정)</span>
+          </div>
+          {isExpanded ? <ChevronUp size={20} className="text-gray-500"/> : <ChevronDown size={20} className="text-gray-500"/>}
+        </div>
+        {isExpanded && (
+          <div className="p-4">
+            {day.items.map((item, idx) => (<ScheduleItemInput key={item.id} item={item} dayIndex={index} itemIndex={idx} />))}
+            <button onClick={() => addItem(index)} className="w-full py-3 mt-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"><Plus size={18}/> 일정 추가하기</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans pb-20 print:bg-white print:pb-0">
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-break-avoid { break-inside: avoid; }
+          body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .shadow-2xl { box-shadow: none !important; }
+          .max-w-4xl { max-width: 100% !important; }
+          main { padding: 0 !important; margin: 0 !important; }
+        }
+      `}</style>
+
+      {/* --- Search Modal (No Print) --- */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-start pt-20 no-print">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fade-in relative">
+            <button onClick={() => setIsSearchOpen(false)} className="absolute right-4 top-4 text-gray-400 hover:text-black"><X size={24}/></button>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-900"><Search size={24}/> 기존 견적 불러오기</h3>
+            
+            <div className="mb-4">
+              <input 
+                type="text" 
+                placeholder="고객명으로 검색..." 
+                className="w-full p-3 border rounded-lg text-lg"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="max-h-[400px] overflow-y-auto space-y-2">
+              {isLoading ? (
+                <div className="text-center py-8 text-gray-500">불러오는 중...</div>
+              ) : savedEstimates.filter(est => est.customerName.includes(searchTerm)).length > 0 ? (
+                savedEstimates
+                  .filter(est => est.customerName.includes(searchTerm))
+                  .map(est => (
+                    <div 
+                      key={est.id} 
+                      onClick={() => selectEstimate(est)}
+                      className="p-4 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex justify-between items-center group"
+                    >
+                      <div>
+                        <div className="font-bold text-gray-800">{est.customerName} 님</div>
+                        <div className="text-xs text-gray-500">{est.startDate} ~ {est.endDate} ({est.updatedAt?.split('T')[0] || '날짜없음'} 저장됨)</div>
+                      </div>
+                      <button 
+                        onClick={(e) => handleDelete(e, est.id)}
+                        className="p-2 text-gray-300 hover:text-red-500 group-hover:block"
+                        title="삭제"
+                      >
+                        <Trash2 size={16}/>
+                      </button>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Navigation */}
+      <nav className="bg-blue-900 text-white p-4 sticky top-0 z-50 shadow-md no-print">
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Globe className="text-yellow-400" />
+            <h1 className="text-xl font-bold tracking-wider hidden md:block">KOSVI TRAVEL</h1>
+            <h1 className="text-xl font-bold tracking-wider md:hidden">KOSVI</h1>
+          </div>
+          
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Admin Toolbar */}
+            {mode === 'admin' && (
+              <div className="flex items-center gap-2 bg-blue-800 p-1 rounded-lg mr-2">
+                <button 
+                  onClick={resetData}
+                  className="px-3 py-1.5 rounded hover:bg-blue-700 text-blue-200 text-xs flex items-center gap-1"
+                  title="새로 만들기"
+                >
+                  <RefreshCw size={14}/> <span className="hidden md:inline">초기화</span>
+                </button>
+                <button 
+                  onClick={openSearchModal}
+                  className="px-3 py-1.5 rounded hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1 bg-blue-600 shadow-sm"
+                >
+                  <Search size={14}/> 불러오기
+                </button>
+                <button 
+                  onClick={handleSave}
+                  className="px-3 py-1.5 rounded hover:bg-green-600 text-white text-xs font-bold flex items-center gap-1 bg-green-500 shadow-sm"
+                >
+                  {isLoading ? '저장 중...' : <><Save size={14}/> 저장</>}
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2 bg-blue-800 p-1 rounded-lg">
+              <button 
+                onClick={() => setMode('admin')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'admin' ? 'bg-white text-blue-900 shadow' : 'text-blue-200 hover:text-white'}`}
+              >
+                <Settings size={14} className="inline mr-1"/> 관리자
+              </button>
+              <button 
+                onClick={() => setMode('customer')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'customer' ? 'bg-white text-blue-900 shadow' : 'text-blue-200 hover:text-white'}`}
+              >
+                <Eye size={14} className="inline mr-1"/> 고객용
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-5xl mx-auto p-4 md:p-8">
+        {/* Currency & Print Controls (No Print) */}
+        <div className="flex justify-end mb-6 items-center gap-3 no-print">
+            {mode === 'customer' && (
+              <button onClick={handlePrint} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors shadow-sm text-sm">
+                <Printer size={16} /> 인쇄 / PDF 저장
+              </button>
+            )}
+            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <span className="text-gray-600 font-medium text-sm hidden md:inline">결제 통화:</span>
+            <div className="flex bg-white rounded-lg shadow-sm border p-1">
+                {['VND', 'KRW', 'USD'].map(c => (
+                    <button key={c} onClick={() => setCurrency(c)} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${currency === c ? 'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-50'}`}>{c}</button>
+                ))}
+            </div>
+        </div>
+
+        {mode === 'admin' ? (
+          <div className="space-y-6 animate-fade-in no-print">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg shadow-sm flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-yellow-800 flex items-center gap-2"><Calculator size={18}/> 상세 견적 작성 모드</h3>
+                  <p className="text-sm text-yellow-700 mt-1">상단의 <strong>[불러오기]</strong>로 기존 견적을 찾거나 <strong>[저장]</strong>으로 현재 내용을 보관하세요.</p>
+                </div>
+                {data.id && (
+                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-bold">
+                    수정 모드 ({data.customerName})
+                  </div>
+                )}
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2"><Calendar size={20}/> 여행 개요</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-xs font-bold text-gray-500 mb-1">고객명/단체명 (검색 키워드)</label>
+                      <input type="text" className="w-full p-2 border rounded border-blue-300 bg-blue-50" value={data.customerName} onChange={(e) => setData({...data, customerName: e.target.value})} placeholder="예: 홍길동 (필수 입력)" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">시작일</label>
+                      <input type="date" className="w-full p-2 border rounded" value={data.startDate} onChange={(e) => handleDateChange('startDate', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">종료일</label>
+                      <input type="date" className="w-full p-2 border rounded" value={data.endDate} onChange={(e) => handleDateChange('endDate', e.target.value)} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 className="text-lg font-bold mb-4 text-blue-900 flex items-center gap-2"><Plane size={20}/> 항공편 정보</h2>
+                <div className="space-y-4">
+                   <div className="flex flex-col md:flex-row gap-2 items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <span className="text-xs font-bold text-blue-600 w-16 text-center bg-blue-100 rounded px-1 py-1">출국</span>
+                      <input type="text" placeholder="출발지" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.from} onChange={(e) => handleFlightChange('dept', 'from', e.target.value)} />
+                      <span className="text-gray-400">→</span>
+                      <input type="text" placeholder="도착지" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.to} onChange={(e) => handleFlightChange('dept', 'to', e.target.value)} />
+                      <div className="flex flex-1 gap-2">
+                          <input type="text" placeholder="편명" className="w-20 p-2 border rounded text-sm" value={data.flight.dept.flightNo} onChange={(e) => handleFlightChange('dept', 'flightNo', e.target.value)} />
+                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.depTime} onChange={(e) => handleFlightChange('dept', 'depTime', e.target.value)} />
+                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.arrTime} onChange={(e) => handleFlightChange('dept', 'arrTime', e.target.value)} />
+                      </div>
+                   </div>
+                   <div className="flex flex-col md:flex-row gap-2 items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <span className="text-xs font-bold text-blue-600 w-16 text-center bg-blue-100 rounded px-1 py-1">귀국</span>
+                      <input type="text" placeholder="출발지" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.from} onChange={(e) => handleFlightChange('ret', 'from', e.target.value)} />
+                      <span className="text-gray-400">→</span>
+                      <input type="text" placeholder="도착지" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.to} onChange={(e) => handleFlightChange('ret', 'to', e.target.value)} />
+                      <div className="flex flex-1 gap-2">
+                          <input type="text" placeholder="편명" className="w-20 p-2 border rounded text-sm" value={data.flight.ret.flightNo} onChange={(e) => handleFlightChange('ret', 'flightNo', e.target.value)} />
+                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.depTime} onChange={(e) => handleFlightChange('ret', 'depTime', e.target.value)} />
+                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.arrTime} onChange={(e) => handleFlightChange('ret', 'arrTime', e.target.value)} />
+                      </div>
+                   </div>
+                </div>
+            </div>
+
+            <div>
+               <h2 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2"><FileText size={20}/> 상세 일정 만들기</h2>
+               {data.schedule.map((day, index) => (<DaySection key={day.date} day={day} index={index} />))}
+            </div>
+
+            <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg mt-8">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign/> 비용 정산</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3 text-sm text-gray-300">
+                        <div className="flex justify-between"><span>총 원가 합계 (VND):</span><span className="font-mono text-gray-400">{formatMoney(totalCost, 'VND')}</span></div>
+                        <div className="flex justify-between items-center">
+                            <span>마진(이익금) 추가:</span>
+                            <div className="flex items-center gap-2 bg-gray-700 rounded p-1">
+                                <span className="text-xs text-gray-400 pl-1">+</span>
+                                <input type="number" className="bg-transparent text-right text-white w-28 outline-none font-bold" value={data.margin} onChange={(e) => setData({...data, margin: parseInt(e.target.value) || 0})} />
+                                <span className="text-xs pr-1">VND</span>
+                            </div>
+                        </div>
+                         <div className="border-t border-gray-600 pt-3 flex justify-between text-yellow-400 font-bold text-xl"><span>최종 판매가 (VND):</span><span>{formatMoney(totalPriceVND, 'VND')}</span></div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                         <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">환율 설정</h3>
+                         <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div><label className="block text-gray-400 mb-1">KRW 환율</label><input type="number" step="0.001" className="w-full p-2 rounded bg-gray-600 text-white border border-gray-500" value={rates.KRW} onChange={(e) => setRates({...rates, KRW: parseFloat(e.target.value)})} /></div>
+                            <div><label className="block text-gray-400 mb-1">USD 환율</label><input type="number" step="0.00001" className="w-full p-2 rounded bg-gray-600 text-white border border-gray-500" value={rates.USD} onChange={(e) => setRates({...rates, USD: parseFloat(e.target.value)})} /></div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fade-in bg-white shadow-2xl rounded-xl overflow-hidden max-w-4xl mx-auto border border-gray-200 print:shadow-none print:border-none print:w-full print:max-w-none">
+            {/* Customer Header */}
+            <div className="bg-blue-900 text-white p-8 relative overflow-hidden print:bg-white print:text-black print:p-0 print:mb-6 print:border-b-2 print:border-blue-900">
+                <div className="absolute top-0 right-0 p-8 opacity-10 print:hidden"><Plane size={150} /></div>
+                <div className="relative z-10 text-center md:text-left">
+                    <div className="inline-block border-2 border-yellow-400 px-3 py-1 rounded text-yellow-400 text-xs font-bold tracking-widest mb-2 print:border-black print:text-black">PREMIUM TRAVEL</div>
+                    <h2 className="text-4xl font-extrabold tracking-tight mb-2 font-serif">TRAVEL ITINERARY</h2>
+                    <p className="text-blue-200 font-medium text-lg tracking-wide print:text-gray-600">KOSVI TRAVEL & AGENCY</p>
+                    <div className="mt-8 flex flex-col md:flex-row gap-8 pt-6 border-t border-blue-800 print:border-gray-300 print:mt-4 print:pt-4">
+                        <div><span className="block text-blue-400 text-xs uppercase mb-1 print:text-gray-500">Guest Name</span><span className="font-bold text-2xl">{data.customerName ? `${data.customerName} 님` : '고객님'}</span></div>
+                         <div><span className="block text-blue-400 text-xs uppercase mb-1 print:text-gray-500">Period</span><span className="font-bold text-xl">{data.startDate} ~ {data.endDate}<span className="ml-2 text-lg font-medium opacity-80 print:text-black">{getDuration(data.startDate, data.endDate)}</span></span></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Itinerary Body */}
+            <div className="p-8 space-y-10 print:p-4 print:space-y-6">
+                <section className="print-break-avoid">
+                    <h3 className="text-blue-900 font-bold border-b-2 border-blue-900 pb-3 mb-6 flex items-center gap-2 text-lg"><Plane className="text-blue-600"/> 항공 여정 (Flight Info)</h3>
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 bg-gray-50 rounded-xl p-5 border border-gray-100 flex items-center gap-4 print:border-gray-300 print:bg-white">
+                             <div className="bg-blue-100 p-3 rounded-full text-blue-600 font-bold text-xs print:border print:border-gray-300">DEPART</div>
+                             <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-bold text-xl text-gray-800">{data.flight.dept.from}</span>
+                                    <span className="text-gray-300 px-2">✈</span>
+                                    <span className="font-bold text-xl text-gray-800">{data.flight.dept.to}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-blue-600 font-medium text-sm print:text-black">
+                                    <span className="bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{data.flight.dept.flightNo || '편명 미정'}</span>
+                                    <span>{data.flight.dept.depTime || '--:--'}</span>
+                                    <span>→</span>
+                                    <span>{data.flight.dept.arrTime || '--:--'}</span>
+                                </div>
+                             </div>
+                        </div>
+                        <div className="flex-1 bg-gray-50 rounded-xl p-5 border border-gray-100 flex items-center gap-4 print:border-gray-300 print:bg-white">
+                             <div className="bg-blue-100 p-3 rounded-full text-blue-600 font-bold text-xs print:border print:border-gray-300">RETURN</div>
+                             <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-bold text-xl text-gray-800">{data.flight.ret.from}</span>
+                                    <span className="text-gray-300 px-2">✈</span>
+                                    <span className="font-bold text-xl text-gray-800">{data.flight.ret.to}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-blue-600 font-medium text-sm print:text-black">
+                                    <span className="bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{data.flight.ret.flightNo || '편명 미정'}</span>
+                                    <span>{data.flight.ret.depTime || '--:--'}</span>
+                                    <span>→</span>
+                                    <span>{data.flight.ret.arrTime || '--:--'}</span>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 className="text-blue-900 font-bold border-b-2 border-blue-900 pb-3 mb-8 flex items-center gap-2 text-lg print:mb-4"><FileText className="text-blue-600"/> 상세 일정표 (Daily Schedule)</h3>
+                    <div className="space-y-12 print:space-y-8">
+                        {data.schedule.map((day, idx) => {
+                            const sortedItems = [...day.items].sort((a, b) => a.time.localeCompare(b.time));
+                            return (
+                                <div key={day.date} className="relative pl-4 md:pl-0 print:pl-0 print-break-avoid">
+                                    <div className="flex items-center gap-4 mb-6 sticky top-0 bg-white z-10 py-2 print:static print:mb-2 print:py-0">
+                                        <div className="bg-blue-900 text-white w-12 h-12 rounded-xl flex flex-col items-center justify-center shadow-lg print:shadow-none print:border print:border-black print:bg-white print:text-black"><span className="text-[10px] font-light opacity-80 print:font-bold">DAY</span><span className="text-xl font-bold leading-none">{idx + 1}</span></div>
+                                        <div><h4 className="font-bold text-xl text-gray-800">{day.date} <span className="text-blue-600 print:text-black">({getDayLabel(day.date)})</span></h4></div>
+                                    </div>
+                                    <div className="space-y-4 ml-6 border-l-2 border-gray-100 pl-8 pb-4 relative print:border-l-2 print:border-gray-300">
+                                        {sortedItems.length > 0 ? sortedItems.map((item) => {
+                                            const typeInfo = itemTypes.find(t => t.id === item.type) || itemTypes[itemTypes.length - 1];
+                                            return (
+                                                <div key={item.id} className="relative group print-break-avoid">
+                                                    <div className={`absolute -left-[43px] top-1 w-6 h-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 ${typeInfo.bg} ${typeInfo.color} print:border-gray-400 print:bg-white print:text-black`}><div className="w-2 h-2 bg-current rounded-full"></div></div>
+                                                    <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-6 bg-white hover:bg-gray-50 p-3 rounded-lg transition-colors print:p-1 print:hover:bg-white">
+                                                        <div className="md:w-16 pt-1 flex items-center gap-1 text-gray-500 font-mono text-sm font-semibold print:text-black">{item.time || '--:--'}</div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${typeInfo.bg} ${typeInfo.color} print:border print:border-gray-300 print:bg-white print:text-black`}>{typeInfo.label}</span><h5 className="font-bold text-gray-800">{item.title}</h5></div>
+                                                            {item.detail && (<p className="text-sm text-gray-500 leading-relaxed pl-1 print:text-black">{item.detail}</p>)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }) : (<div className="text-gray-300 italic text-sm py-4 print:hidden">등록된 일정이 없습니다.</div>)}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <div className="mt-12 bg-blue-900 rounded-xl p-8 text-white shadow-xl relative overflow-hidden print:bg-white print:text-black print:border-t-2 print:border-black print:shadow-none print:rounded-none print:mt-8 print:pt-4 print-break-avoid">
+                     <div className="absolute -right-10 -bottom-10 opacity-10 transform rotate-12 print:hidden"><DollarSign size={200}/></div>
+                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+                        <div><h4 className="text-blue-300 font-bold text-sm uppercase tracking-widest mb-1 print:text-black">Total Estimated Cost</h4><p className="text-xs text-blue-200 opacity-80 print:text-gray-600">* 포함사항: 항공, 숙박, 차량, 가이드, 전 일정 식사 및 투어 (불포함 사항 별도 문의)</p></div>
+                        <div className="text-right"><span className="text-5xl font-extrabold tracking-tight">{formatMoney(convertPrice(totalPriceVND), currency)}</span>{currency !== 'VND' && (<p className="text-sm text-blue-300 mt-2 font-mono print:text-black">{formatMoney(totalPriceVND, 'VND')} (Based on Rate)</p>)}</div>
+                     </div>
+                </div>
+
+                <div className="mt-12 text-center text-gray-400 text-xs border-t pt-8 leading-relaxed print:text-black print:mt-6 print:pt-4">
+                    <p className="font-bold text-gray-600 text-sm mb-2 print:text-black">KOSVI TRAVEL & AGENCY</p>
+                    <p>Contact: 077 890 1861 (법인장 허창수) | Email: admin@daewoongvina.com</p>
+                    <p>Address: Ho Chi Minh City, Vietnam</p>
+                    <p className="mt-4 opacity-50">Copyright © 2026 KOSVI TRAVEL. All rights reserved.</p>
+                </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default KosviTravelApp;
+>>>>>>> 4992a0c3b7a2075fbe7f56b094e6ce14c096f3ec
