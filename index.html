@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOSVI Travel Manager - Vietnam Master</title>
+    <title>KOSVI Travel Manager - Vietnam Integrated</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,12 +12,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .glass-panel { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(226, 232, 240, 0.8); }
         .sidebar-gradient { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
         .ceo-card { background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); color: white; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .excel-border { border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="bg-[#f1f5f9]">
@@ -28,11 +29,12 @@
          * [🚀 PROJECT MASTER GUIDE - Gemini 전용 기억 저장소]
          * ---------------------------------------------------------
          * 1. 사용자 정보: 허창수 법인장 (CEO, KOSVI Travel)
-         * 2. 프로젝트: KOSVI 여행사 통합 관리 시스템 (v8.0 - 일정+견적 통합 및 알림 강화)
+         * 2. 프로젝트: KOSVI 여행사 통합 관리 시스템 (v9.0 - 일정+견적 통합 뷰)
          * 3. 핵심 규칙:
-         * - 보안: CEO(admin/1234 - 일정+견적 편집), Staff(staff/5678 - 일정조회+예약관리).
-         * - 통화: 모든 금액은 베트남 동 (VND) 표시.
-         * - 기능: 캘린더 뷰, 예약 누락(대기) 알림, 파일 업로드 시뮬레이션 및 메모.
+         * - UI 개선: 엑셀처럼 일정과 견적을 한 화면(모달)에서 동시에 작업 가능하게 통합.
+         * - 보안: CEO(admin - 일정+견적 동시 노출), Staff(staff - 일정 전용).
+         * - 통화: 베트남 동 (VND) 기준.
+         * - 기능: 캘린더, 예약 알림, 파일 업로드 시뮬레이션.
          * ---------------------------------------------------------
          */
 
@@ -53,14 +55,13 @@
                         <circle cx="50" cy="50" r="15" fill="#f8fafc" stroke="white" strokeWidth="4"/>
                     </svg>
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-xl font-black text-slate-800 leading-none">KOSVI</span>
+                <div className="flex flex-col text-left">
+                    <span className="text-xl font-black text-slate-800 leading-none tracking-tighter">KOSVI</span>
                     <span className="text-[10px] font-extrabold text-blue-600 tracking-[0.25em] leading-tight uppercase text-nowrap">Travel & Logistics</span>
                 </div>
             </div>
         );
 
-        // 초기 데이터 (VND 및 일정 상세)
         const INITIAL_TRIPS = [
             { 
                 id: 1, 
@@ -77,71 +78,64 @@
                 fileUploaded: true,
                 itinerary: [
                     { day: 1, title: '호치민 입국 및 미팅', activities: ['공항 픽업', '호텔 체크인', '중식(신밧드케밥)'] },
-                    { day: 2, title: '트윈도브스 골프 라운딩', activities: ['18홀 라운딩', '석식(한솔식당)', '마사지 90분'] }
+                    { day: 2, title: '트윈도브스 골프 라운딩', activities: ['18홀 라운딩', '석식(한솔식당)', '마사지 90분'] },
+                    { day: 3, title: '무이네 지프 투어', activities: ['새벽 지프투어', '화이트샌듄/레드샌듄', '해산물 식당'] }
                 ],
                 quoteItems: [
                     { name: 'S2 차량 지원 (6일분)', cost: 3354600, price: 6300000, qty: 6, unit: '회' },
-                    { name: 'Twin Doves Golf', cost: 6300000, price: 8500000, qty: 2, unit: '명' },
+                    { name: 'Twin Doves Golf (18홀)', cost: 6300000, price: 8500000, qty: 2, unit: '명' },
                     { name: 'Landmark Plus Hotel', cost: 10950000, price: 13687500, qty: 3, unit: '박' }
                 ],
-                staffNote: '골프장 및 호텔 예약 확정 완료됨.'
+                staffNote: '골프장 예약 바우처 확인 완료.'
             },
             { 
                 id: 2, 
-                title: '강진호 님 하노이 5일 일정', 
-                client: '강진호 님', 
-                pax: 4, 
-                date: '2026-01-22',
-                endDate: '2026-01-26',
+                title: '대웅에스앤티 하노이 기업연수', 
+                client: '대웅에스앤티', 
+                pax: 12, 
+                date: '2026-01-20',
+                endDate: '2026-01-24',
                 flightIn: 'VN441 10:15 도착',
                 flightOut: 'VN440 23:30 출발',
                 exchangeRate: 5.45, 
                 status: '견적중',
-                bookingStatus: '대기', // 알림 대상
+                bookingStatus: '대기', 
                 fileUploaded: false,
                 itinerary: [
-                    { day: 1, title: '하노이 노이바이 입국', activities: ['공항 픽업', '시내 이동'] }
+                    { day: 1, title: '하노이 도착 및 시내관광', activities: ['노이바이 공항 픽업', '호안끼엠 관광', '전통식 석식'] }
                 ],
                 quoteItems: [
-                    { name: '전용 차량 지원', cost: 4000000, price: 6000000, qty: 5, unit: '일' }
+                    { name: '45인승 대형 버스', cost: 4000000, price: 6000000, qty: 5, unit: '일' }
                 ],
-                staffNote: '차량 배차 대기 중. 확인 필요.'
+                staffNote: '배차 업체 확인 중입니다.'
             }
         ];
 
-        // 캘린더 컴포넌트
         const CalendarView = ({ trips, onTripClick }) => {
-            const daysInMonth = 31;
-            const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const calendarDays = Array.from({ length: 31 }, (_, i) => i + 1);
 
             return (
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-10 animate-fade-in">
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-10 animate-fade-in overflow-hidden">
                     <div className="flex justify-between items-center mb-8 px-2">
-                        <h3 className="text-2xl font-black text-slate-800 tracking-tighter italic">2026년 1월 운영 일정표</h3>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tighter italic">JANUARY 2026</h3>
                         <div className="flex gap-2">
                             <button className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"><Icon name="chevron-left" /></button>
                             <button className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"><Icon name="chevron-right" /></button>
                         </div>
                     </div>
                     <div className="calendar-grid border-t border-l border-slate-100 font-bold">
-                        {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d, i) => (
                             <div key={d} className={`p-4 text-center text-[10px] uppercase tracking-[0.2em] border-r border-b border-slate-100 bg-slate-50/50 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-slate-400'}`}>{d}</div>
                         ))}
                         {calendarDays.map(day => {
                             const dateStr = `2026-01-${day.toString().padStart(2, '0')}`;
                             const dayTrips = trips.filter(t => t.date === dateStr);
                             return (
-                                <div key={day} className="min-h-[140px] p-2 border-r border-b border-slate-100 hover:bg-slate-50 transition-colors relative group">
-                                    <span className="text-xs text-slate-300 font-black ml-1 group-hover:text-blue-500 transition-colors">{day}</span>
+                                <div key={day} className="min-h-[140px] p-2 border-r border-b border-slate-100 hover:bg-blue-50/20 transition-colors relative group">
+                                    <span className="text-xs font-black text-slate-300 ml-1 group-hover:text-blue-500 transition-colors">{day}</span>
                                     <div className="mt-2 space-y-1">
                                         {dayTrips.map(t => (
-                                            <div 
-                                                key={t.id} 
-                                                onClick={() => onTripClick(t)}
-                                                className={`text-[10px] p-2 rounded-xl cursor-pointer truncate shadow-sm transition-transform active:scale-95 font-black ${t.bookingStatus === '확정' ? 'bg-blue-600 text-white' : 'bg-red-500 text-white animate-pulse'}`}
-                                            >
-                                                {t.client}
-                                            </div>
+                                            <div key={t.id} onClick={() => onTripClick(t)} className={`text-[10px] p-2 rounded-xl cursor-pointer truncate shadow-sm font-black transition-all hover:scale-105 ${t.bookingStatus === '확정' ? 'bg-blue-600 text-white' : 'bg-red-500 text-white animate-pulse'}`}>{t.client}</div>
                                         ))}
                                     </div>
                                 </div>
@@ -157,11 +151,9 @@
             const [trips, setTrips] = useState(INITIAL_TRIPS);
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedTrip, setSelectedTrip] = useState(null);
-            const [modalView, setModalView] = useState('itinerary');
 
             const alerts = useMemo(() => trips.filter(t => t.bookingStatus === '대기'), [trips]);
             const filteredTrips = trips.filter(trip => trip.client.includes(searchTerm));
-
             const formatVND = (val) => val.toLocaleString() + ' ₫';
 
             return (
@@ -170,87 +162,75 @@
                         <div className="p-8 bg-white mb-6 shadow-md"><KosviLogo /></div>
                         <nav className="flex-1 px-4 space-y-2">
                             <NavItem active={viewMode === 'list'} onClick={() => setViewMode('list')} icon="layout-dashboard" label="운영 현황 리스트" />
-                            <NavItem active={viewMode === 'calendar'} onClick={() => setViewMode('calendar')} icon="월간 일정표" label="월간 일정표" />
+                            <NavItem active={viewMode === 'calendar'} onClick={() => setViewMode('calendar')} icon="calendar" label="월간 일정표" />
                         </nav>
                         <div className="p-6 border-t border-slate-800 space-y-4">
-                            <div className="p-5 bg-slate-800/40 rounded-2xl border border-slate-700">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Signed In As</p>
-                                <p className="text-sm font-black">{userRole === 'ceo' ? '허창수 법인장' : 'VND 예약담당'}</p>
+                            <div className="p-5 bg-slate-800/40 rounded-[2rem] border border-slate-700">
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 italic">Authorized Admin</p>
+                                <p className="text-sm font-black text-blue-400">{userRole === 'ceo' ? '허창수 법인장' : 'VND 예약담당'}</p>
                             </div>
-                            <button onClick={onLogout} className="w-full py-3 bg-slate-700 hover:bg-red-900/40 hover:text-red-400 text-slate-400 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2">
-                                <Icon name="log-out" size={14} /> 로그아웃
-                            </button>
+                            <button onClick={onLogout} className="w-full py-3 bg-slate-700 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 italic">LOGOUT</button>
                         </div>
                     </aside>
 
                     <main className="flex-1 overflow-y-auto flex flex-col">
                         <header className="glass-panel sticky top-0 px-10 py-6 flex justify-between items-center z-20 shadow-sm border-b border-slate-200/50">
                             <div className="flex items-center gap-6">
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tighter italic">{userRole === 'ceo' ? 'CEO Master Workspace' : 'KOSVI Staff Workspace'}</h2>
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tighter italic uppercase">{userRole === 'ceo' ? 'CEO Control Panel' : 'Staff Workspace'}</h2>
                                 {alerts.length > 0 && (
-                                    <div className="flex items-center gap-3 bg-red-50 text-red-600 px-4 py-2 rounded-2xl animate-pulse border border-red-100 shadow-sm">
-                                        <Icon name="alert-triangle" size={18} />
-                                        <span className="text-[11px] font-black uppercase tracking-widest">예약 누락 주의: {alerts.length}건</span>
+                                    <div className="flex items-center gap-3 bg-red-50 text-red-600 px-4 py-2 rounded-2xl animate-pulse border border-red-100">
+                                        <Icon name="alert-triangle" size={16} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">누락 알림: {alerts.length}건</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <Icon name="search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" placeholder="고객명으로 검색..." className="pl-12 pr-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none w-72 shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                                </div>
+                            <div className="relative">
+                                <Icon name="search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                <input type="text" placeholder="고객 검색..." className="pl-12 pr-6 py-3 bg-white border border-slate-200 rounded-[1.5rem] text-sm outline-none w-72 shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                         </header>
 
-                        <div className="p-10 space-y-10 max-w-[1500px] mx-auto w-full">
+                        <div className="p-10 space-y-10 max-w-[1600px] mx-auto w-full">
                             {viewMode === 'calendar' ? (
                                 <CalendarView trips={trips} onTripClick={(t) => setSelectedTrip(t)} />
                             ) : (
-                                <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-fade-in">
-                                    <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-                                            <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
-                                            Reservation & Itinerary Master List
-                                        </h3>
-                                        <button className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black text-xs shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all">
-                                            <Icon name="plus" size={16} /> 신규 등록
-                                        </button>
+                                <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl overflow-hidden animate-fade-in">
+                                    <div className="px-10 py-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 uppercase italic tracking-widest">Active Master List</h3>
+                                        <button className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black text-[11px] shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all uppercase"><Icon name="plus" size={14} /> New Schedule</button>
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-sm font-bold border-collapse">
+                                        <table className="w-full text-left">
                                             <thead>
-                                                <tr className="text-slate-400 text-[11px] font-black uppercase tracking-widest border-b border-slate-100 bg-slate-50/20">
-                                                    <th className="px-10 py-6">Customer / Trip Title</th>
-                                                    <th className="px-10 py-6">Flight Schedule</th>
-                                                    <th className="px-10 py-6 text-center">Status</th>
-                                                    <th className="px-10 py-6 text-center">Docs</th>
-                                                    <th className="px-10 py-6 text-right">Action</th>
+                                                <tr className="text-slate-400 text-[10px] font-black uppercase tracking-[0.25em] border-b border-slate-100 bg-slate-50/30">
+                                                    <th className="px-10 py-6">Customer Information</th>
+                                                    <th className="px-10 py-6">Flight Status</th>
+                                                    <th className="px-10 py-6 text-center">Booking</th>
+                                                    <th className="px-10 py-6 text-center">Evidence</th>
+                                                    <th className="px-10 py-6 text-right">Master Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {filteredTrips.map(trip => (
                                                     <tr key={trip.id} className="group hover:bg-slate-50 transition-all">
                                                         <td className="px-10 py-8">
-                                                            <p className="font-black text-slate-900 text-lg tracking-tight leading-tight">{trip.client}</p>
+                                                            <p className="font-black text-slate-900 text-lg tracking-tight">{trip.client}</p>
                                                             <p className="text-[10px] text-blue-600 font-bold mt-1.5 uppercase tracking-widest">{trip.date} · {trip.pax} Pax</p>
                                                         </td>
                                                         <td className="px-10 py-8">
-                                                            <div className="text-[11px] font-bold text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl w-fit mb-1 border border-blue-100">{trip.flightIn}</div>
-                                                            <div className="text-[11px] font-bold text-slate-400 px-3 py-1.5 rounded-xl w-fit border border-slate-200">{trip.flightOut}</div>
+                                                            <div className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 w-fit">{trip.flightIn}</div>
+                                                        </td>
+                                                        <td className="px-10 py-8 text-center font-black">
+                                                            <span className={`inline-block px-4 py-2 rounded-full text-[10px] tracking-widest ${trip.bookingStatus === '확정' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600 animate-pulse border border-red-100'}`}>
+                                                                {trip.bookingStatus === '확정' ? 'CONFIRMED' : 'PENDING!'}
+                                                            </span>
                                                         </td>
                                                         <td className="px-10 py-8 text-center">
-                                                            <span className={`inline-block px-4 py-2 rounded-full text-[10px] font-black tracking-widest shadow-sm ${
-                                                                trip.bookingStatus === '확정' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600 animate-pulse border border-red-100'
-                                                            }`}>{trip.bookingStatus === '확정' ? '예약확정' : '예약누락'}</span>
+                                                            <Icon name={trip.fileUploaded ? "file-check" : "file-warning"} size={22} className={trip.fileUploaded ? "text-green-500 mx-auto" : "text-slate-200 mx-auto"} />
                                                         </td>
-                                                        <td className="px-10 py-8 text-center">
-                                                            <Icon name={trip.fileUploaded ? "file-check" : "file-warning"} size={24} className={trip.fileUploaded ? "text-green-500 mx-auto" : "text-slate-200 mx-auto"} />
-                                                        </td>
-                                                        <td className="px-10 py-8 text-right font-black">
-                                                            <div className="flex items-center justify-end gap-3">
-                                                                {userRole === 'ceo' && <span className="text-slate-800 text-lg mr-4 italic tracking-tighter">{formatVND(trip.quoteItems.reduce((a,b)=>a+b.price,0))}</span>}
-                                                                <button onClick={() => setSelectedTrip(trip)} className="p-4 bg-white border border-slate-200 rounded-[1.5rem] hover:border-blue-600 hover:text-blue-600 transition-all shadow-sm active:scale-90"><Icon name="edit-3" /></button>
-                                                            </div>
+                                                        <td className="px-10 py-8 text-right font-black flex items-center justify-end gap-6 h-full">
+                                                            {userRole === 'ceo' && <span className="text-slate-800 text-lg mr-2 italic tracking-tighter">{formatVND(trip.quoteItems.reduce((a,b)=>a+b.price,0))}</span>}
+                                                            <button onClick={() => setSelectedTrip(trip)} className="p-4 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 hover:text-blue-600 shadow-sm transition-all active:scale-90"><Icon name="edit-3" /></button>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -262,96 +242,108 @@
                         </div>
                     </main>
 
+                    {/* [통합 마스터 모달] 일정 + 견적 한 화면 구성 */}
                     {selectedTrip && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-end bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-300">
-                            <div className="bg-white w-[950px] h-full shadow-2xl p-0 flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
-                                <div className="p-12 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-300 p-8">
+                            <div className="bg-white w-full max-w-[1400px] h-[90vh] shadow-2xl rounded-[4rem] flex flex-col animate-in zoom-in-95 duration-500 overflow-hidden border border-white/20">
+                                <div className="px-12 py-10 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                     <div>
-                                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{selectedTrip.client} 일정/견적 Master</h3>
-                                        <p className="text-blue-600 text-[11px] font-black mt-2 uppercase tracking-[0.3em] italic">{selectedTrip.date} ~ {selectedTrip.endDate}</p>
+                                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">{selectedTrip.client} 통합 마스터 워크시트</h3>
+                                        <p className="text-blue-600 text-xs font-black mt-2 tracking-[0.4em] italic">{selectedTrip.date} ~ {selectedTrip.endDate} (PAX: {selectedTrip.pax})</p>
                                     </div>
-                                    <button onClick={() => setSelectedTrip(null)} className="p-5 bg-slate-100 rounded-[2rem] hover:bg-slate-200 transition-all"><Icon name="x" size={28} /></button>
+                                    <button onClick={() => setSelectedTrip(null)} className="p-6 bg-slate-100 rounded-[2.5rem] hover:bg-slate-200 transition-all shadow-sm"><Icon name="x" size={28} /></button>
                                 </div>
 
-                                <div className="flex px-12 py-6 bg-white border-b border-slate-100 gap-10">
-                                    <button onClick={() => setModalView('itinerary')} className={`text-xs font-black pb-3 tracking-widest transition-all ${modalView === 'itinerary' ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-300 hover:text-slate-500'}`}>TRAVEL ITINERARY (일정표)</button>
-                                    <button onClick={() => setModalView('quote')} className={`text-xs font-black pb-3 tracking-widest transition-all ${modalView === 'quote' ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-300 hover:text-slate-500'}`}>COST QUOTATION (견적서)</button>
-                                </div>
-
-                                <div className="flex-1 overflow-y-auto p-12 space-y-12">
-                                    {modalView === 'itinerary' ? (
-                                        <div className="space-y-10 animate-fade-in">
-                                            {selectedTrip.itinerary.map((day, idx) => (
-                                                <div key={idx} className="flex gap-8 group">
-                                                    <div className="w-16 h-16 rounded-[2rem] bg-slate-900 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xl group-hover:scale-110 transition-transform">D-{day.day}</div>
-                                                    <div className="flex-1 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md">
-                                                        <h4 className="font-black text-slate-800 text-xl mb-6 flex justify-between items-center">
-                                                            {day.title}
-                                                            {userRole === 'ceo' && <Icon name="edit" size={18} className="text-slate-300 cursor-pointer hover:text-blue-600" />}
-                                                        </h4>
-                                                        <div className="grid grid-cols-1 gap-4">
-                                                            {day.activities.map((act, i) => (
-                                                                <div key={i} className="flex items-center gap-4 text-sm text-slate-600 font-bold bg-white p-5 rounded-2xl border border-slate-100 shadow-sm"><div className="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>{act}</div>
-                                                            ))}
-                                                        </div>
+                                <div className="flex-1 flex overflow-hidden">
+                                    {/* 왼쪽: 일정표 (엑셀 양식 왼쪽) */}
+                                    <div className="w-1/2 p-12 overflow-y-auto border-r border-slate-100 space-y-10">
+                                        <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                            <Icon name="map" size={16} /> 01. TRAVEL ITINERARY
+                                        </h4>
+                                        {selectedTrip.itinerary.map((day, idx) => (
+                                            <div key={idx} className="flex gap-8 group">
+                                                <div className="w-14 h-14 rounded-[1.8rem] bg-slate-900 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-lg group-hover:scale-110 transition-transform">D-{day.day}</div>
+                                                <div className="flex-1 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md">
+                                                    <h5 className="font-black text-slate-800 text-lg mb-4 flex justify-between items-center italic">{day.title} <Icon name="edit-2" size={14} className="text-slate-200 hover:text-blue-400 cursor-pointer" /></h5>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {day.activities.map((act, i) => (
+                                                            <div key={i} className="flex items-center gap-3 text-sm text-slate-600 font-bold bg-white p-4 rounded-2xl border border-slate-50 shadow-sm"><div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>{act}</div>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                            ))}
-                                            
-                                            <div className="p-10 bg-blue-50/50 border border-blue-100 rounded-[3rem] space-y-8 mt-12">
-                                                <h4 className="text-sm font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2 italic"><Icon name="cloud-upload" size={20} /> Booking Confirmation & Evidence (Staff Only)</h4>
-                                                <div className="flex gap-6">
-                                                    <div className="flex-1 p-10 border-2 border-dashed border-blue-200 rounded-[2rem] flex flex-col items-center justify-center bg-white cursor-pointer hover:bg-blue-50 transition-all group">
-                                                        <Icon name="file-plus" size={40} className="text-blue-300 mb-3 group-hover:scale-125 transition-transform" />
-                                                        <p className="text-[11px] font-black text-blue-400">항공/호텔 확인서 업로드</p>
-                                                    </div>
-                                                    <textarea className="flex-[1.5] bg-white border border-slate-200 rounded-[2rem] p-8 text-sm font-bold outline-none h-44 shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" placeholder="예약 완료 메시지나 직원의 특이사항 메모를 입력하세요..." defaultValue={selectedTrip.staffNote}></textarea>
-                                                </div>
-                                                <button className="w-full bg-blue-600 text-white py-7 rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-500/20 active:scale-95 transition-all">전체 예약 상태 최종 업데이트</button>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-10 animate-fade-in">
-                                            {userRole === 'ceo' ? (
-                                                <div className="bg-slate-900 rounded-[3rem] p-12 text-white shadow-2xl relative border border-slate-800 overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-10 opacity-10"><Icon name="shield-check" size={120} /></div>
-                                                    <div className="flex justify-between items-end mb-12 border-b border-slate-800 pb-8">
-                                                        <h4 className="text-2xl font-black italic tracking-tighter">CEO Financial Master Report</h4>
-                                                        <span className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase underline decoration-blue-500 decoration-2 underline-offset-4">Exchange Rate: {selectedTrip.exchangeRate}</span>
+                                        ))}
+                                    </div>
+
+                                    {/* 오른쪽: 견적서 및 예약관리 (엑셀 양식 오른쪽) */}
+                                    <div className="w-1/2 p-12 overflow-y-auto bg-slate-50/30">
+                                        {userRole === 'ceo' ? (
+                                            <div className="space-y-10">
+                                                <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                    <Icon name="calculator" size={16} /> 02. COST & QUOTATION (VND)
+                                                </h4>
+                                                <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative border border-slate-800 overflow-hidden">
+                                                    <div className="absolute top-0 right-0 p-8 opacity-5"><Icon name="shield-check" size={140} /></div>
+                                                    <div className="flex justify-between items-end mb-10 border-b border-slate-800 pb-8">
+                                                        <h5 className="text-2xl font-black italic tracking-tighter uppercase text-blue-400">Financial Report</h5>
+                                                        <span className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase italic underline underline-offset-8">Exchange Rate: {selectedTrip.exchangeRate}</span>
                                                     </div>
                                                     <table className="w-full text-sm">
                                                         <thead className="text-slate-500 border-b border-slate-800 font-bold text-[10px] uppercase tracking-widest">
-                                                            <tr><th className="py-5 text-left">Description</th><th className="py-5 text-right">Cost (VND)</th><th className="py-5 text-right text-blue-400">Quote (VND)</th><th className="py-5 text-right">Profit</th></tr>
+                                                            <tr><th className="py-5 text-left">Description</th><th className="py-5 text-right">Cost (VND)</th><th className="py-5 text-right text-blue-400">Quote (VND)</th></tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-800 font-bold">
                                                             {selectedTrip.quoteItems.map((item, i) => (
-                                                                <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                                                    <td className="py-7">{item.name}</td>
-                                                                    <td className="py-7 text-right text-slate-400 font-black">{formatVND(item.cost)}</td>
-                                                                    <td className="py-7 text-right text-blue-400 font-black text-lg">{formatVND(item.price)}</td>
-                                                                    <td className="py-7 text-right text-green-500 italic">₩{((item.price - item.cost) / 10000).toLocaleString()}만</td>
+                                                                <tr key={i} className="hover:bg-white/5 transition-colors">
+                                                                    <td className="py-6">{item.name}</td>
+                                                                    <td className="py-6 text-right text-slate-400">{formatVND(item.cost)}</td>
+                                                                    <td className="py-6 text-right text-blue-400 font-black text-lg">{formatVND(item.price)}</td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
                                                         <tfoot>
                                                             <tr className="border-t border-slate-700 bg-white/5">
-                                                                <td colSpan="3" className="py-10 px-6 text-right text-slate-400 font-black uppercase text-xs tracking-widest">Total Estimated Profit</td>
-                                                                <td className="py-10 pr-6 text-right text-4xl font-black text-white italic tracking-tighter decoration-green-500 underline decoration-4 underline-offset-8">
+                                                                <td colSpan="2" className="py-10 text-right text-slate-500 font-black uppercase text-xs tracking-widest italic">Total Estimated Net Profit</td>
+                                                                <td className="py-10 pr-2 text-right text-4xl font-black text-white italic tracking-tighter decoration-green-500 underline decoration-4 underline-offset-8">
                                                                     {formatVND(selectedTrip.quoteItems.reduce((a,b)=>a+(b.price-b.cost),0))}
                                                                 </td>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
                                                 </div>
-                                            ) : (
-                                                <div className="p-24 bg-white rounded-[3rem] text-center border-2 border-dashed border-slate-100 flex flex-col items-center">
-                                                    <div className="p-8 bg-slate-50 rounded-full mb-8"><Icon name="lock" size={64} className="text-slate-200" /></div>
-                                                    <h4 className="text-2xl font-black text-slate-800 tracking-widest italic uppercase">Access Restricted</h4>
-                                                    <p className="text-slate-400 font-bold text-sm mt-4 max-w-sm leading-relaxed text-center">금융 정보 및 상세 견적은 허창수 법인장님 고유 권한입니다. 예약 및 일정 관리 탭을 이용해 주세요.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-10">
+                                                <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                    <Icon name="lock" size={16} /> 02. RESERVATION SYSTEM (RESTRICTED)
+                                                </h4>
+                                                <div className="p-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 text-center flex flex-col items-center shadow-inner">
+                                                    <Icon name="shield-off" size={64} className="text-slate-100 mb-8" />
+                                                    <h5 className="text-xl font-black text-slate-300 tracking-widest uppercase italic">Price Data Locked</h5>
+                                                    <p className="text-slate-300 font-bold text-xs mt-4 leading-relaxed max-w-xs">상세 견적 및 수익 정보는 허창수 법인장님 고유 권한입니다. 하단의 예약 특이사항만 업데이트해 주세요.</p>
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
+
+                                        {/* 공통: 직원용 예약 업데이트 섹션 */}
+                                        <div className="mt-12 p-10 bg-blue-50/50 border border-blue-100 rounded-[3rem] space-y-8">
+                                            <div className="flex justify-between items-center">
+                                                <h4 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2 italic"><Icon name="cloud-upload" size={18} /> Booking & Evidence Master</h4>
+                                                <select className="bg-white border border-blue-200 px-4 py-2 rounded-xl text-[10px] font-black text-blue-600 outline-none shadow-sm" defaultValue={selectedTrip.bookingStatus}>
+                                                    <option>대기 (Pending)</option>
+                                                    <option>확정 (Confirmed)</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex gap-6">
+                                                <div className="flex-1 p-10 border-2 border-dashed border-blue-200 rounded-[2.5rem] flex flex-col items-center justify-center bg-white/60 cursor-pointer hover:bg-white transition-all group">
+                                                    <Icon name="file-up" size={32} className="text-blue-300 mb-3 group-hover:scale-125 transition-transform" />
+                                                    <p className="text-[10px] font-black text-blue-400 tracking-tighter">바우처 업로드</p>
+                                                </div>
+                                                <textarea className="flex-[1.5] bg-white border border-slate-200 rounded-[2.5rem] p-8 text-sm font-bold outline-none h-40 shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" placeholder="예약 담당자 특이사항 메모..." defaultValue={selectedTrip.staffNote}></textarea>
+                                            </div>
+                                            <button className="w-full bg-slate-900 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-2xl active:scale-95 transition-all uppercase italic tracking-widest">Update Master Record</button>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -365,11 +357,7 @@
             const login = (role) => setAuthState({ isLoggedIn: true, role });
             const logout = () => setAuthState({ isLoggedIn: false, role: null });
 
-            return authState.isLoggedIn ? (
-                <MainApp userRole={authState.role} onLogout={logout} />
-            ) : (
-                <LoginPage onLogin={login} />
-            );
+            return authState.isLoggedIn ? <MainApp userRole={authState.role} onLogout={logout} /> : <LoginPage onLogin={login} />;
         };
 
         const LoginPage = ({ onLogin }) => {
@@ -381,28 +369,19 @@
                 e.preventDefault();
                 if (id === 'admin' && pw === '1234') onLogin('ceo');
                 else if (id === 'staff' && pw === '5678') onLogin('staff');
-                else setError('ID 또는 암호가 올바르지 않습니다.');
+                else setError('ID/PW Error');
             };
 
             return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/5 rounded-full -ml-32 -mb-32 blur-3xl"></div>
-                    
-                    <div className="bg-white p-16 rounded-[4rem] shadow-2xl w-full max-w-md animate-fade-in border border-slate-200 relative z-10">
-                        <KosviLogo className="justify-center mb-12" />
-                        <h2 className="text-3xl font-black text-slate-800 text-center tracking-tighter mb-10 italic">Management Login</h2>
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <div className="space-y-2 px-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Access ID</label>
-                                <input type="text" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-bold focus:ring-4 focus:ring-blue-500/5 transition-all shadow-inner" placeholder="admin / staff" value={id} onChange={(e) => setId(e.target.value)} />
-                            </div>
-                            <div className="space-y-2 px-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secret Key</label>
-                                <input type="password" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-bold focus:ring-4 focus:ring-blue-500/5 transition-all shadow-inner" placeholder="Password" value={pw} onChange={(e) => setPw(e.target.value)} />
-                            </div>
-                            {error && <p className="text-red-500 text-xs font-bold text-center italic">{error}</p>}
-                            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-[2.5rem] font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all text-xl mt-4">접속하기</button>
+                <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-6 relative">
+                    <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[120px]"></div>
+                    <div className="bg-white p-20 rounded-[5rem] shadow-2xl w-full max-w-lg animate-fade-in border border-slate-100 relative z-10">
+                        <KosviLogo className="justify-center mb-16" />
+                        <form onSubmit={handleLogin} className="space-y-8">
+                            <input type="text" className="w-full px-10 py-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-black italic shadow-inner focus:ring-8 focus:ring-blue-500/5 transition-all" placeholder="ADMIN ID" value={id} onChange={(e) => setId(e.target.value)} />
+                            <input type="password" className="w-full px-10 py-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-black italic shadow-inner focus:ring-8 focus:ring-blue-500/5 transition-all" placeholder="SECRET KEY" value={pw} onChange={(e) => setPw(e.target.value)} />
+                            {error && <p className="text-red-500 text-xs font-black text-center italic uppercase tracking-widest">{error}</p>}
+                            <button type="submit" className="w-full bg-blue-600 text-white py-7 rounded-[2.5rem] font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all text-xl uppercase italic tracking-tighter">Enter Management</button>
                         </form>
                     </div>
                 </div>
@@ -410,8 +389,8 @@
         };
 
         const NavItem = ({ active, icon, label, onClick }) => (
-            <button onClick={onClick} className={`w-full flex items-center gap-5 px-10 py-5 rounded-[2.5rem] transition-all duration-300 ${active ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30 font-black scale-105' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 font-bold'}`}>
-                <Icon name={icon} size={22} /> <span className="text-sm tracking-tighter uppercase font-black">{label}</span>
+            <button onClick={onClick} className={`w-full flex items-center gap-5 px-10 py-6 rounded-[2.5rem] transition-all duration-300 ${active ? 'bg-blue-600 text-white shadow-2xl font-black scale-105' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 font-bold'}`}>
+                <Icon name={icon} size={22} /> <span className="text-[11px] tracking-widest uppercase font-black">{label}</span>
                 {active && <div className="ml-auto w-2 h-2 bg-white rounded-full animate-ping"></div>}
             </button>
         );
