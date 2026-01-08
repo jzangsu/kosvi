@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOSVI Travel Manager - Integrated Master System</title>
+    <title>KOSVI Travel Manager - Integrated System v23</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,31 +12,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; background-color: #f8fafc; }
-        
-        /* 공통 스타일 */
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
         .sidebar-gradient { background: linear-gradient(180deg, #0f172a 0%, #334155 100%); }
-        
-        /* 엑셀 스타일 입력 필드 */
         .excel-input { background: transparent; border: 1px solid transparent; width: 100%; padding: 6px; border-radius: 4px; transition: all 0.2s; font-size: 13px; }
         .excel-input:hover { border-color: #e2e8f0; background: #f8fafc; }
         .excel-input:focus { border-color: #3b82f6; background: #ffffff; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
         .excel-textarea { min-height: 36px; resize: vertical; overflow: hidden; line-height: 1.4; }
-
-        /* 테이블 및 캘린더 */
         .sticky-header th { position: sticky; top: 0; background: #f8fafc; z-index: 20; border-bottom: 2px solid #cbd5e1; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
         .calendar-day { min-height: 80px; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
-
-        /* 플로팅 버튼 */
         .fab-button { position: fixed; bottom: 24px; right: 24px; z-index: 50; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
-
-        /* 파일 미리보기 모달 */
         .preview-modal { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; }
         .preview-content { max-width: 90%; max-height: 90%; position: relative; }
         .preview-close { position: absolute; top: -40px; right: 0; color: white; cursor: pointer; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 50%; }
-
-        /* 인쇄 스타일 */
         @media print {
             @page { size: A4; margin: 10mm; }
             body { background: white; -webkit-print-color-adjust: exact; }
@@ -51,13 +39,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        /**
-         * [🚀 PROJECT MASTER GUIDE v22.0]
-         * - 사용자: 허창수 법인장 (KOSVI)
-         * - 계정: admin(1234), staff1(1111), staff2(2222)
-         * - 업데이트: 증빙 업로드/미리보기, 항목/단위 선택형 변경, 내용칸 확장, 견적서 고도화
-         */
-
         const { useState, useEffect, useMemo, useRef } = React;
 
         const Icon = ({ name, size = 18, className = "" }) => {
@@ -81,55 +62,43 @@
 
         const getToday = () => new Date().toISOString().split('T')[0];
 
-        const KosviLogo = ({ dark = false, small = false }) => (
+        const KosviLogo = ({ dark = false, customLogo = null }) => (
             <div className="flex items-center gap-3">
-                <div className={`${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg flex items-center justify-center shadow-lg ${dark ? 'bg-slate-900' : 'bg-blue-600'}`}>
-                    <span className="text-white font-black italic text-sm">K</span>
-                </div>
+                {customLogo ? (
+                    <img src={customLogo} alt="Logo" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
+                ) : (
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg ${dark ? 'bg-slate-900' : 'bg-blue-600'}`}>
+                        <span className="text-white font-black italic text-sm">K</span>
+                    </div>
+                )}
                 <div className="flex flex-col">
-                    <span className={`${small ? 'text-lg' : 'text-xl'} font-black leading-none italic ${dark ? 'text-slate-900' : 'text-slate-800'}`}>KOSVI</span>
+                    <span className={`text-xl font-black leading-none italic ${dark ? 'text-slate-900' : 'text-slate-800'}`}>KOSVI</span>
                     <span className="text-[8px] font-bold text-blue-600 tracking-widest uppercase">Vietnam Travel</span>
                 </div>
             </div>
         );
 
-        // 옵션 데이터
         const TYPE_OPTIONS = ['차량', '골프', '호텔', '투어', '식사', '가이드', '항공', '기타'];
         const UNIT_OPTIONS = ['박', '명', '회', '일', '개', '팀', '식'];
 
         const INITIAL_TRIPS = [
             { 
-                id: 1, 
-                title: '임창호 님 호치민 3박 4일', 
-                client: '임창호', 
-                pax: 3, 
-                startDate: '2026-01-13',
-                endDate: '2026-01-16',
-                exchangeRate: 5.54, 
-                targetCurrency: 'KRW',
-                status: '진행중',
-                paymentStatus: '미입금',
-                flightInfo: {
-                    in: { flight: 'KE469', route: 'ICN-SGN', depTime: '09:05', arrTime: '12:40' },
-                    out: { flight: 'KE470', route: 'SGN-ICN', depTime: '13:55', arrTime: '21:15' }
-                },
+                id: 1, title: '임창호 님 호치민 3박 4일', client: '임창호', pax: 3, 
+                startDate: '2026-01-13', endDate: '2026-01-16', exchangeRate: 5.54, targetCurrency: 'KRW', status: '진행중', paymentStatus: '미입금',
+                flightInfo: { in: { flight: 'KE469', route: 'ICN-SGN', depTime: '09:05', arrTime: '12:40' }, out: { flight: 'KE470', route: 'SGN-ICN', depTime: '13:55', arrTime: '21:15' } },
                 items: [
-                    { id: 1, date: '2026-01-13', time: '12:40', category: '차량', content: '공항 픽업 (S2)', qty: 1, unit: '회', costVnd: 500000, priceVnd: 800000, booking: '확정', note: '기사 대기중', bookingFile: null, paymentFile: null },
-                    { id: 2, date: '2026-01-13', time: '15:00', category: '호텔', content: '랜드마크 플러스 체크인', qty: 3, unit: '박', costVnd: 3650000, priceVnd: 4500000, booking: '대기', note: '', bookingFile: null, paymentFile: null },
-                    { id: 3, date: '2026-01-14', time: '08:30', category: '골프', content: '트윈도브스 18홀\n(임창호, 홍길동, 김철수, 이영희)', qty: 4, unit: '명', costVnd: 3150000, priceVnd: 4200000, booking: '확정', note: '', bookingFile: null, paymentFile: null }
+                    { id: 1, date: '2026-01-13', time: '12:40', category: '차량', content: '공항 픽업 (S2)', qty: 1, unit: '회', costVnd: 500000, priceVnd: 800000, booking: '확정', note: '기사 대기중' },
+                    { id: 2, date: '2026-01-13', time: '15:00', category: '호텔', content: '랜드마크 플러스 체크인', qty: 3, unit: '박', costVnd: 3650000, priceVnd: 4500000, booking: '대기', note: '' },
+                    { id: 3, date: '2026-01-14', time: '08:30', category: '골프', content: '트윈도브스 18홀', qty: 4, unit: '명', costVnd: 3150000, priceVnd: 4200000, booking: '확정', note: '' }
                 ]
             }
         ];
 
-        // 이미지 미리보기 컴포넌트
         const ImagePreview = ({ file, onClose }) => (
             <div className="preview-modal" onClick={onClose}>
                 <div className="preview-content" onClick={e => e.stopPropagation()}>
                     <button className="preview-close" onClick={onClose}><Icon name="x" size={24} /></button>
-                    {file.type.startsWith('image/') ? 
-                        <img src={file.url} alt="Preview" className="rounded-lg shadow-2xl max-h-[85vh] object-contain bg-white" /> : 
-                        <div className="bg-white p-20 rounded-xl text-center"><Icon name="file-text" size={64} /><p className="mt-4 font-bold">{file.name}</p></div>
-                    }
+                    {file.type.startsWith('image/') ? <img src={file.url} alt="Preview" className="rounded-lg shadow-2xl max-h-[85vh] object-contain bg-white" /> : <div className="bg-white p-20 rounded-xl text-center"><Icon name="file-text" size={64} /><p className="mt-4 font-bold">{file.name}</p></div>}
                 </div>
             </div>
         );
@@ -141,37 +110,20 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             const [previewFile, setPreviewFile] = useState(null);
+            const [customLogo, setCustomLogo] = useState(null); // 로고 상태
 
             const calculateTotal = (items, type) => items.reduce((acc, item) => acc + (item[type] * item.qty), 0);
             const convert = (vnd, rate, curr) => curr === 'VND' ? vnd : curr === 'USD' ? vnd/24000 : vnd/rate;
 
             const handleAddTrip = () => {
                 const newId = Date.now();
-                const newTrip = {
-                    id: newId,
-                    title: '신규 여행 일정',
-                    client: '신규 고객',
-                    pax: 1,
-                    startDate: getToday(),
-                    endDate: getToday(),
-                    exchangeRate: 1,
-                    targetCurrency: 'VND',
-                    status: '견적중',
-                    paymentStatus: '미입금',
-                    flightInfo: { in: { flight: '', route: '', depTime: '', arrTime: '' }, out: { flight: '', route: '', depTime: '', arrTime: '' } },
-                    items: [
-                        { id: 1, date: getToday(), time: '09:00', category: '기타', content: '', qty: 1, unit: '회', costVnd: 0, priceVnd: 0, booking: '미정', note: '', bookingFile: null, paymentFile: null }
-                    ]
-                };
+                const newTrip = { id: newId, title: '신규 일정', client: '신규 고객', pax: 1, startDate: getToday(), endDate: getToday(), exchangeRate: 1, targetCurrency: 'VND', status: '견적중', paymentStatus: '미입금', flightInfo: { in: { flight: '', route: '', depTime: '', arrTime: '' }, out: { flight: '', route: '', depTime: '', arrTime: '' } }, items: [{ id: 1, date: getToday(), time: '09:00', category: '기타', content: '', qty: 1, unit: '회', costVnd: 0, priceVnd: 0, booking: '미정', note: '' }] };
                 setTrips([newTrip, ...trips]);
                 setSelectedTrip(newTrip);
             };
 
             const updateFlightInfo = (type, field, value) => {
-                setSelectedTrip(prev => ({
-                    ...prev,
-                    flightInfo: { ...prev.flightInfo, [type]: { ...prev.flightInfo[type], [field]: value } }
-                }));
+                setSelectedTrip(prev => ({ ...prev, flightInfo: { ...prev.flightInfo, [type]: { ...prev.flightInfo[type], [field]: value } } }));
             };
 
             const handleFileUpload = (itemId, fileType, file) => {
@@ -181,104 +133,103 @@
                 setSelectedTrip({ ...selectedTrip, items: newItems });
             };
 
-            // 숫자 입력 (콤마 자동)
+            const handleLogoUpload = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    setCustomLogo(URL.createObjectURL(e.target.files[0]));
+                    alert('로고가 변경되었습니다. (최적사이즈: 200x200px)');
+                }
+            };
+
             const NumberInput = ({ value, onChange, className, readOnly, placeholder }) => (
-                <input type="text" className={className} value={value ? Number(value).toLocaleString() : ''} 
-                    onChange={(e) => { const val = e.target.value.replace(/,/g, ''); if (!isNaN(val)) onChange(Number(val)); }} 
-                    placeholder={placeholder || "0"} readOnly={readOnly} />
+                <input type="text" className={className} value={value ? Number(value).toLocaleString() : ''} onChange={(e) => { const val = e.target.value.replace(/,/g, ''); if (!isNaN(val)) onChange(Number(val)); }} placeholder={placeholder || "0"} readOnly={readOnly} />
             );
 
-            // 텍스트 확장
             const AutoResizeTextarea = ({ value, onChange, className, placeholder }) => {
                 const textareaRef = useRef(null);
-                useEffect(() => {
-                    if (textareaRef.current) {
-                        textareaRef.current.style.height = 'auto';
-                        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-                    }
-                }, [value]);
+                useEffect(() => { if (textareaRef.current) { textareaRef.current.style.height = 'auto'; textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'; } }, [value]);
                 return <textarea ref={textareaRef} className={`${className} excel-textarea`} rows={1} value={value} onChange={onChange} placeholder={placeholder} />;
             };
 
-            // 캘린더 및 리스트 뷰 렌더링 (이전 버전 유지)
-            const renderCalendar = () => { /* ... (이전 코드와 동일, 생략하여 길이 최적화) ... */ return <div className="p-10 bg-white rounded-3xl border border-slate-200 text-center font-bold text-slate-400">캘린더 보기 (Calendar View)</div>; };
+            // 대시보드 및 리마인더 뷰
+            const DashboardView = () => {
+                const pendingPayments = trips.filter(t => t.paymentStatus !== '완납').length;
+                const totalRevenue = trips.reduce((acc, t) => acc + calculateTotal(t.items, 'priceVnd'), 0);
+                return (
+                    <div className="p-8 space-y-8 animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                                <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Trips</h3>
+                                <p className="text-3xl font-black text-slate-800 mt-2">{trips.length} 건</p>
+                            </div>
+                            <div className="bg-red-50 p-8 rounded-2xl shadow-sm border border-red-100 relative overflow-hidden">
+                                <h3 className="text-red-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"><Icon name="bell" size={14} /> Payment Reminder</h3>
+                                <p className="text-3xl font-black text-red-600 mt-2">{pendingPayments} 건 미입금</p>
+                                <Icon name="alert-circle" className="absolute -bottom-4 -right-4 text-red-100" size={100} />
+                            </div>
+                            {userRole === 'admin' && (
+                                <div className="bg-blue-600 p-8 rounded-2xl shadow-lg relative overflow-hidden">
+                                    <h3 className="text-blue-200 text-xs font-bold uppercase tracking-widest">Total Revenue (VND)</h3>
+                                    <p className="text-3xl font-black text-white mt-2">{formatMoney(totalRevenue, 'VND')}</p>
+                                    <Icon name="trending-up" className="absolute -bottom-4 -right-4 text-white/10" size={100} />
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* 로고 업로드 설정 */}
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="settings" size={18} /> 시스템 설정</h4>
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-slate-500">회사 로고 변경:</span>
+                                <label className="bg-slate-100 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-200 transition-colors">
+                                    파일 선택 <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                </label>
+                                {customLogo && <span className="text-xs text-green-600 font-bold">변경됨</span>}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
 
-            // 견적서 뷰 (깔끔한 디자인)
+            // 견적서 뷰
             if (showQuote && selectedTrip) {
                 const totalVND = calculateTotal(selectedTrip.items, 'priceVnd');
                 const finalPrice = convert(totalVND, selectedTrip.exchangeRate, selectedTrip.targetCurrency);
                 return (
                     <div className="fixed inset-0 z-[200] bg-slate-100 overflow-y-auto print-container">
-                        <div className="max-w-[210mm] mx-auto min-h-screen bg-white p-12 shadow-lg my-0 md:my-10 relative print:m-0 print:shadow-none">
+                        <div className="max-w-[210mm] mx-auto min-h-screen bg-white p-12 shadow-lg my-10 relative print:m-0 print:shadow-none">
                             <div className="absolute top-4 right-4 flex gap-2 no-print">
                                 <button onClick={() => window.print()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Icon name="printer" /> 인쇄/PDF</button>
-                                <button onClick={() => setShowCustomerQuote(false)} className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
+                                <button onClick={() => setShowQuote(false)} className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
                             </div>
-                            
                             <div className="border-b-2 border-slate-800 pb-6 mb-8 flex justify-between items-end">
-                                <div><KosviLogo dark={true} /><p className="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Travel Itinerary & Invoice</p></div>
+                                <div><KosviLogo dark={true} customLogo={customLogo} /><p className="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Travel Itinerary & Invoice</p></div>
                                 <div className="text-right"><h1 className="text-4xl font-black text-slate-900 tracking-tighter">ESTIMATE</h1><p className="text-sm font-medium text-slate-500">Date: {new Date().toLocaleDateString()}</p></div>
                             </div>
-
                             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8 grid grid-cols-2 gap-8 text-sm">
-                                <div>
-                                    <h4 className="font-bold text-blue-600 uppercase text-xs mb-2">Customer Info</h4>
-                                    <p className="font-bold text-lg text-slate-800">{selectedTrip.client} 님 <span className="text-sm font-normal text-slate-500">({selectedTrip.pax}명)</span></p>
-                                    <p className="text-slate-600">{selectedTrip.startDate} ~ {selectedTrip.endDate}</p>
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-blue-600 uppercase text-xs mb-2">Flight Schedule</h4>
-                                    <div className="space-y-1">
-                                        <p><span className="font-bold w-10 inline-block">IN:</span> {selectedTrip.flightInfo.in.flight} ({selectedTrip.flightInfo.in.route}) {selectedTrip.flightInfo.in.depTime} → {selectedTrip.flightInfo.in.arrTime}</p>
-                                        <p><span className="font-bold w-10 inline-block">OUT:</span> {selectedTrip.flightInfo.out.flight} ({selectedTrip.flightInfo.out.route}) {selectedTrip.flightInfo.out.depTime} → {selectedTrip.flightInfo.out.arrTime}</p>
-                                    </div>
-                                </div>
+                                <div><h4 className="font-bold text-blue-600 uppercase text-xs mb-2">Customer Info</h4><p className="font-bold text-lg text-slate-800">{selectedTrip.client} 님 <span className="text-sm font-normal text-slate-500">({selectedTrip.pax}명)</span></p><p className="text-slate-600">{selectedTrip.startDate} ~ {selectedTrip.endDate}</p></div>
+                                <div><h4 className="font-bold text-blue-600 uppercase text-xs mb-2">Flight Schedule</h4><div className="space-y-1"><p><span className="font-bold w-10 inline-block">IN:</span> {selectedTrip.flightInfo.in.flight} ({selectedTrip.flightInfo.in.route}) {selectedTrip.flightInfo.in.depTime} → {selectedTrip.flightInfo.in.arrTime}</p><p><span className="font-bold w-10 inline-block">OUT:</span> {selectedTrip.flightInfo.out.flight} ({selectedTrip.flightInfo.out.route}) {selectedTrip.flightInfo.out.depTime} → {selectedTrip.flightInfo.out.arrTime}</p></div></div>
                             </div>
-
                             <table className="w-full text-sm border-collapse mb-8">
-                                <thead>
-                                    <tr className="bg-slate-800 text-white uppercase text-[10px] font-bold">
-                                        <th className="p-3 text-left rounded-tl-lg">Date / Time</th>
-                                        <th className="p-3 text-left">Description</th>
-                                        <th className="p-3 text-center w-16">Qty</th>
-                                        <th className="p-3 text-center w-16 rounded-tr-lg">Unit</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr className="bg-slate-800 text-white uppercase text-[10px] font-bold"><th className="p-3 text-left rounded-tl-lg">Date / Time</th><th className="p-3 text-left">Description</th><th className="p-3 text-center w-16">Qty</th><th className="p-3 text-center w-16 rounded-tr-lg">Unit</th></tr></thead>
                                 <tbody className="text-slate-700">
                                     {selectedTrip.items.map((item, idx) => (
                                         <tr key={idx} className="border-b border-slate-100 page-break">
-                                            <td className="p-3 bg-slate-50/50 w-32 font-bold align-top">
-                                                <div>{item.date}</div><div className="text-blue-600 text-xs">{formatTimeAMPM(item.time)}</div>
-                                            </td>
-                                            <td className="p-3 align-top">
-                                                <div className="font-bold text-slate-800 whitespace-pre-line">{item.content}</div>
-                                                <div className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded inline-block mt-1">{item.category}</div>
-                                            </td>
-                                            <td className="p-3 text-center align-top">{item.qty}</td>
-                                            <td className="p-3 text-center align-top">{item.unit}</td>
+                                            <td className="p-3 bg-slate-50/50 w-32 font-bold align-top"><div>{item.date}</div><div className="text-blue-600 text-xs mt-1">{formatTimeAMPM(item.time)}</div></td>
+                                            <td className="p-3 align-top"><div className="font-bold text-slate-800 whitespace-pre-line">{item.content}</div><div className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded inline-block mt-1">{item.category}</div></td>
+                                            <td className="p-3 text-center align-top">{item.qty}</td><td className="p-3 text-center align-top text-slate-500">{item.unit}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-
                             <div className="flex justify-end mb-10 page-break">
                                 <div className="w-1/2 text-right">
-                                    <div className="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
-                                        <span className="font-bold text-slate-500">Subtotal</span>
-                                        <span className="font-bold text-slate-800">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="font-black text-xl text-blue-600">Total Amount</span>
-                                        <span className="font-black text-3xl text-slate-900">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</span>
-                                    </div>
+                                    <div className="flex justify-between items-center mb-2 border-b border-slate-200 pb-2"><span className="font-bold text-slate-500">Subtotal</span><span className="font-bold text-slate-800">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</span></div>
+                                    <div className="flex justify-between items-center"><span className="font-black text-xl text-blue-600">Total Amount</span><span className="font-black text-3xl text-slate-900">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</span></div>
+                                    {selectedTrip.pax > 1 && <p className="text-sm font-bold text-slate-600 mt-1">1인당 예상 금액: {formatMoney(finalPrice / selectedTrip.pax, selectedTrip.targetCurrency)}</p>}
                                     <p className="text-xs text-slate-400 mt-2">* 환율(Rate): {selectedTrip.exchangeRate} 적용</p>
                                 </div>
                             </div>
-
-                            <div className="bg-slate-50 p-6 rounded-lg border-l-4 border-blue-600 text-sm page-break">
-                                <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><Icon name="credit-card" size={16} /> PAYMENT INFO</h4>
-                                {selectedTrip.targetCurrency === 'KRW' ? <p>KRW: 토스뱅크 1000-1841-9143 (예금주: 허창수)</p> : <p>VND: 신한베트남 077-890-1861 (HEO CHANGSU)</p>}
-                            </div>
+                            <div className="bg-slate-50 p-6 rounded-lg border-l-4 border-blue-600 text-sm page-break"><h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><Icon name="credit-card" size={16} /> PAYMENT INFO</h4>{selectedTrip.targetCurrency === 'KRW' ? <p>KRW: 토스뱅크 1000-1841-9143 (예금주: 허창수)</p> : <p>VND: 신한베트남 077-890-1861 (HEO CHANGSU)</p>}</div>
                         </div>
                     </div>
                 );
@@ -287,35 +238,27 @@
             return (
                 <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in no-print">
                     <aside className={`fixed md:relative inset-y-0 left-0 w-64 bg-slate-900 text-white flex-col shrink-0 shadow-2xl z-40 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-                        <div className="p-6 bg-white"><KosviLogo /></div>
-                        <div className="p-6">
-                            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Signed in as</p>
-                                <span className="font-bold text-blue-400">{userRole.toUpperCase()}</span>
-                            </div>
-                        </div>
-                        <nav className="flex-1 px-4 space-y-2">
-                            <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 rounded-xl text-white font-bold text-sm"><Icon name="layout-dashboard" /> 통합 관리 (Master)</button>
-                        </nav>
+                        <div className="p-6 bg-white"><KosviLogo customLogo={customLogo} /></div>
+                        <div className="p-6"><div className="bg-slate-800 rounded-xl p-4 border border-slate-700"><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">USER</p><span className="font-bold text-blue-400">{userRole.toUpperCase()}</span></div></div>
+                        <nav className="flex-1 px-4 space-y-2"><button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 rounded-xl text-white font-bold text-sm shadow-lg"><Icon name="layout-dashboard" /> 통합 관리 (Master)</button></nav>
                         <div className="p-6"><button onClick={onLogout} className="w-full py-3 bg-slate-800 hover:bg-red-900 rounded-xl text-xs font-bold transition-all text-slate-300">LOGOUT</button></div>
                     </aside>
-
                     <main className="flex-1 overflow-y-auto flex flex-col w-full relative" onClick={() => setIsMobileMenuOpen(false)}>
                         <header className="glass-panel sticky top-0 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
                             <button onClick={(e) => {e.stopPropagation(); setIsMobileMenuOpen(!isMobileMenuOpen)}} className="md:hidden mr-4"><Icon name="menu" /></button>
-                            <h2 className="text-xl font-black text-slate-800 tracking-tight">KOSVI MASTER</h2>
+                            <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">KOSVI MASTER</h2>
                             {userRole === 'admin' && <button onClick={handleAddTrip} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2"><Icon name="plus" size={18} /> New</button>}
                         </header>
-
                         <div className="p-4 md:p-8 max-w-[1600px] mx-auto w-full">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {trips.map(trip => (
-                                    <div key={trip.id} onClick={() => setSelectedTrip({...trip})} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all cursor-pointer">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div><h4 className="font-black text-xl text-slate-800">{trip.client} <span className="text-sm font-medium text-slate-400">({trip.pax}명)</span></h4><p className="text-xs text-blue-600 font-bold mt-1">{trip.startDate} ~ {trip.endDate}</p></div>
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${trip.bookingStatus === '확정' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{trip.bookingStatus}</span>
+                            {selectedTrip === null && <DashboardView />}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8">
+                                {trips.filter(t => t.client.includes(searchTerm)).map(trip => (
+                                    <div key={trip.id} onClick={() => setSelectedTrip({...trip})} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden">
+                                        <div className="relative z-10">
+                                            <div className="flex justify-between items-start mb-4"><div><h4 className="font-black text-xl text-slate-800">{trip.client} <span className="text-sm font-medium text-slate-400">({trip.pax}명)</span></h4><p className="text-xs text-blue-600 font-bold mt-1">{trip.startDate} ~ {trip.endDate}</p></div><span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${trip.bookingStatus === '확정' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{trip.bookingStatus}</span></div>
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs font-medium text-slate-500 space-y-1 mb-4"><div className="flex justify-between"><span>IN: {trip.flightInfo.in.flight}</span> <span>{formatTimeAMPM(trip.flightInfo.in.arrTime)} 도착</span></div><div className="flex justify-between"><span>OUT: {trip.flightInfo.out.flight}</span> <span>{formatTimeAMPM(trip.flightInfo.out.depTime)} 출발</span></div></div>
+                                            {userRole === 'admin' && <div className="flex justify-between items-end border-t border-slate-100 pt-4"><span className="text-[10px] font-bold text-slate-400 uppercase">Est. Revenue</span><span className="text-xl font-black text-slate-800">{formatMoney(convert(calculateTotal(trip.items, 'priceVnd'), trip.exchangeRate, trip.targetCurrency), trip.targetCurrency)}</span></div>}
                                         </div>
-                                        {userRole === 'admin' && <div className="text-right font-black text-xl text-slate-800">{formatMoney(convert(calculateTotal(trip.items, 'priceVnd'), trip.exchangeRate, trip.targetCurrency), trip.targetCurrency)}</div>}
                                     </div>
                                 ))}
                             </div>
@@ -325,61 +268,66 @@
                     {selectedTrip && (
                         <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-fade-in">
                             <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center shrink-0 shadow-md">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setSelectedTrip(null)} className="p-2 bg-white/10 rounded-full"><Icon name="arrow-left" /></button>
-                                    <input className="bg-transparent text-lg font-black outline-none w-48" value={selectedTrip.client} onChange={(e) => setSelectedTrip({...selectedTrip, client: e.target.value})} />
-                                </div>
+                                <div className="flex items-center gap-4"><button onClick={() => setSelectedTrip(null)} className="p-2 bg-white/10 rounded-full"><Icon name="arrow-left" /></button><input className="bg-transparent text-lg font-black outline-none w-48" value={selectedTrip.client} onChange={(e) => setSelectedTrip({...selectedTrip, client: e.target.value})} /></div>
                                 {userRole === 'admin' && <button onClick={() => setShowQuote(true)} className="bg-green-600 px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2"><Icon name="printer" /> 견적서</button>}
                             </div>
-
-                            {userRole === 'admin' && (
-                                <div className="bg-slate-800 p-4 flex flex-wrap gap-4 items-center text-xs text-white border-t border-slate-700 shrink-0">
-                                    <div className="flex items-center gap-2"><span className="text-slate-400 font-bold">환율:</span><input type="number" className="bg-slate-700 rounded px-2 py-1 w-16 text-center font-bold outline-none" value={selectedTrip.exchangeRate} onChange={(e) => setSelectedTrip({...selectedTrip, exchangeRate: parseFloat(e.target.value)})} /></div>
-                                    <div className="flex items-center gap-2"><span className="text-slate-400 font-bold">통화:</span><select className="bg-slate-700 rounded px-2 py-1 outline-none font-bold" value={selectedTrip.targetCurrency} onChange={(e) => setSelectedTrip({...selectedTrip, targetCurrency: e.target.value})}><option value="KRW">KRW</option><option value="USD">USD</option><option value="VND">VND</option></select></div>
-                                    <div className="ml-auto text-green-400 font-black text-lg">{formatMoney(convert(calculateTotal(selectedTrip.items, 'priceVnd'), selectedTrip.exchangeRate, selectedTrip.targetCurrency), selectedTrip.targetCurrency)}</div>
+                            {/* 항공 및 환율 정보 패널 */}
+                            <div className="bg-slate-800 px-6 py-4 flex flex-col md:flex-row gap-4 border-t border-white/5 shrink-0 text-white text-xs">
+                                {userRole === 'admin' && <div className="flex items-center gap-2 bg-white/10 p-2 rounded-lg"><span className="font-bold text-slate-300">Rate:</span><input type="number" className="bg-transparent w-16 font-bold outline-none" value={selectedTrip.exchangeRate} onChange={(e) => setSelectedTrip({...selectedTrip, exchangeRate: parseFloat(e.target.value)})} /></div>}
+                                <div className="flex flex-wrap gap-4 flex-1">
+                                    <div className="flex items-center gap-2"><span className="font-bold text-blue-400">IN:</span><input className="bg-transparent border-b border-white/20 w-16" value={selectedTrip.flightInfo.in.flight} onChange={(e)=>updateFlightInfo('in', 'flight', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" value={selectedTrip.flightInfo.in.arrTime} onChange={(e)=>updateFlightInfo('in', 'arrTime', e.target.value)} /></div>
+                                    <div className="flex items-center gap-2"><span className="font-bold text-orange-400">OUT:</span><input className="bg-transparent border-b border-white/20 w-16" value={selectedTrip.flightInfo.out.flight} onChange={(e)=>updateFlightInfo('out', 'flight', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" value={selectedTrip.flightInfo.out.depTime} onChange={(e)=>updateFlightInfo('out', 'depTime', e.target.value)} /></div>
                                 </div>
-                            )}
-
-                            <div className="bg-slate-800 px-6 py-4 flex flex-wrap gap-4 border-t border-white/5 shrink-0 text-white text-xs">
-                                <div className="flex items-center gap-2"><span className="font-bold text-blue-400 w-10">IN:</span><input className="bg-transparent border-b border-white/20 w-16" placeholder="ICN-SGN" value={selectedTrip.flightInfo.in.route} onChange={(e)=>updateFlightInfo('in', 'route', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-16" placeholder="편명" value={selectedTrip.flightInfo.in.flight} onChange={(e)=>updateFlightInfo('in', 'flight', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" placeholder="출발" value={selectedTrip.flightInfo.in.depTime} onChange={(e)=>updateFlightInfo('in', 'depTime', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" placeholder="도착" value={selectedTrip.flightInfo.in.arrTime} onChange={(e)=>updateFlightInfo('in', 'arrTime', e.target.value)} /></div>
-                                <div className="flex items-center gap-2"><span className="font-bold text-orange-400 w-10">OUT:</span><input className="bg-transparent border-b border-white/20 w-16" placeholder="SGN-ICN" value={selectedTrip.flightInfo.out.route} onChange={(e)=>updateFlightInfo('out', 'route', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-16" placeholder="편명" value={selectedTrip.flightInfo.out.flight} onChange={(e)=>updateFlightInfo('out', 'flight', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" placeholder="출발" value={selectedTrip.flightInfo.out.depTime} onChange={(e)=>updateFlightInfo('out', 'depTime', e.target.value)} /><input className="bg-transparent border-b border-white/20 w-12" placeholder="도착" value={selectedTrip.flightInfo.out.arrTime} onChange={(e)=>updateFlightInfo('out', 'arrTime', e.target.value)} /></div>
                             </div>
-
                             <div className="flex-1 overflow-auto bg-white p-4">
-                                <div className="min-w-[1000px] md:min-w-full">
+                                <div className="min-w-[1200px] md:min-w-full">
                                     <table className="w-full text-sm border-collapse">
                                         <thead className="sticky-header text-[11px] text-slate-500 uppercase tracking-wider font-bold">
                                             <tr>
-                                                <th className="p-3 text-center w-28">Date</th><th className="p-3 text-center w-20">Time</th><th className="p-3 w-20">Type</th><th className="p-3 w-[25%]">Description</th><th className="p-3 text-center w-14">Qty</th><th className="p-3 text-center w-14">Unit</th>
-                                                {userRole === 'admin' ? <><th className="p-3 text-right bg-red-50 w-24">Cost</th><th className="p-3 text-right bg-blue-50 w-24">Price</th></> : null}
-                                                <th className="p-3 text-center w-24">Booking</th><th className="p-3 w-24 text-center">Proof</th><th className="p-3 w-32">Note</th><th className="p-3 w-10"></th>
+                                                <th className="p-3 w-28">Date</th><th className="p-3 w-20">Time</th><th className="p-3 w-24">Type</th><th className="p-3 w-[25%]">Description</th><th className="p-3 w-12 text-center">Qty</th><th className="p-3 w-12 text-center">Unit</th>
+                                                {userRole === 'admin' ? <><th className="p-3 text-right bg-red-50 w-24">Cost</th><th className="p-3 text-right bg-red-50 w-24">Sum(C)</th><th className="p-3 text-right bg-blue-50 w-24">Price</th><th className="p-3 text-right bg-blue-50 w-24">Sum(P)</th></> : null}
+                                                <th className="p-3 w-24 text-center">Booking</th><th className="p-3 w-24 text-center">Proof</th><th className="p-3">Memo</th><th className="p-3 w-10"></th>
                                             </tr>
                                         </thead>
                                         <tbody className="font-medium text-slate-700 text-xs">
                                             {selectedTrip.items.map((item, idx) => (
                                                 <tr key={item.id} className="group hover:bg-slate-50 border-b border-slate-100">
                                                     <td className="p-2"><input type="date" className="excel-input font-bold" value={item.date} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].date=e.target.value; setSelectedTrip({...selectedTrip, items:n});}} /></td>
-                                                    <td className="p-2"><input type="time" className="excel-input text-center text-blue-600 font-bold" value={item.time} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].time=e.target.value; setSelectedTrip({...selectedTrip, items:n});}} /></td>
+                                                    <td className="p-2"><input type="time" className="excel-input text-blue-600 font-bold" value={item.time} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].time=e.target.value; setSelectedTrip({...selectedTrip, items:n});}} /></td>
                                                     <td className="p-2"><select className="excel-input" value={item.category} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].category=e.target.value; setSelectedTrip({...selectedTrip, items:n});}}>{TYPE_OPTIONS.map(o=><option key={o}>{o}</option>)}</select></td>
                                                     <td className="p-2"><AutoResizeTextarea className="excel-input font-bold text-slate-800" value={item.content} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].content=e.target.value; setSelectedTrip({...selectedTrip, items:n});}} /></td>
                                                     <td className="p-2"><input type="number" className="excel-input text-center" value={item.qty} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].qty=Number(e.target.value); setSelectedTrip({...selectedTrip, items:n});}} /></td>
                                                     <td className="p-2"><select className="excel-input text-center" value={item.unit} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].unit=e.target.value; setSelectedTrip({...selectedTrip, items:n});}}>{UNIT_OPTIONS.map(o=><option key={o}>{o}</option>)}</select></td>
-                                                    {userRole === 'admin' ? <><td className="p-2 bg-red-50/30"><NumberInput className="excel-input text-right text-red-400" value={item.costVnd} onChange={(v)=>{const n=[...selectedTrip.items]; n[idx].costVnd=v; setSelectedTrip({...selectedTrip, items:n});}} /></td><td className="p-2 bg-blue-50/30"><NumberInput className="excel-input text-right text-blue-500" value={item.priceVnd} onChange={(v)=>{const n=[...selectedTrip.items]; n[idx].priceVnd=v; setSelectedTrip({...selectedTrip, items:n});}} /></td></> : null}
-                                                    <td className="p-2 text-center"><select className={`text-[10px] font-bold px-2 py-1 rounded border outline-none ${item.booking === '확정' ? 'bg-green-100 text-green-800' : 'bg-orange-100'}`} value={item.booking} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].booking=e.target.value; setSelectedTrip({...selectedTrip, items:n});}}><option>미정</option><option>대기</option><option>확정</option></select></td>
+                                                    {userRole === 'admin' ? <>
+                                                        <td className="p-2 bg-red-50/30"><NumberInput className="excel-input text-right text-red-400" value={item.costVnd} onChange={(v)=>{const n=[...selectedTrip.items]; n[idx].costVnd=v; setSelectedTrip({...selectedTrip, items:n});}} /></td>
+                                                        <td className="p-2 bg-red-50/50 text-right font-bold text-red-600">{formatMoney(item.costVnd * item.qty, 'VND')}</td>
+                                                        <td className="p-2 bg-blue-50/30"><NumberInput className="excel-input text-right text-blue-500" value={item.priceVnd} onChange={(v)=>{const n=[...selectedTrip.items]; n[idx].priceVnd=v; setSelectedTrip({...selectedTrip, items:n});}} /></td>
+                                                        <td className="p-2 bg-blue-50/50 text-right font-bold text-blue-700">{formatMoney(item.priceVnd * item.qty, 'VND')}</td>
+                                                    </> : null}
+                                                    <td className="p-2 text-center"><select className={`text-[10px] font-bold px-2 py-1 rounded border ${item.booking === '확정' ? 'bg-green-100 text-green-800' : 'bg-orange-100'}`} value={item.booking} onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].booking=e.target.value; setSelectedTrip({...selectedTrip, items:n});}}><option>미정</option><option>대기</option><option>확정</option></select></td>
                                                     <td className="p-2 flex justify-center gap-2">
-                                                        <label className={`cursor-pointer p-1.5 rounded hover:bg-slate-200 ${item.bookingFile ? 'text-green-500' : 'text-slate-300'}`} title="예약확정서"><Icon name="file-check" size={16} /><input type="file" className="hidden" accept="image/*" onChange={(e)=>handleFileUpload(item.id, 'bookingFile', e.target.files[0])} /></label>
-                                                        {item.bookingFile && <button onClick={()=>setPreviewFile(item.bookingFile)} className="text-[10px] underline text-blue-500">View</button>}
+                                                        <label className={`cursor-pointer p-1 rounded ${item.bookingFile ? 'text-green-500' : 'text-slate-300'}`}><Icon name="file-check" size={16} /><input type="file" className="hidden" accept="image/*" onChange={(e)=>handleFileUpload(item.id, 'bookingFile', e.target.files[0])} /></label>
+                                                        {item.bookingFile && <button onClick={()=>setPreviewFile(item.bookingFile)} className="text-[10px] text-blue-500 underline">V</button>}
                                                         <div className="w-px bg-slate-300 mx-1"></div>
-                                                        <label className={`cursor-pointer p-1.5 rounded hover:bg-slate-200 ${item.paymentFile ? 'text-blue-500' : 'text-slate-300'}`} title="송금확인서"><Icon name="credit-card" size={16} /><input type="file" className="hidden" accept="image/*" onChange={(e)=>handleFileUpload(item.id, 'paymentFile', e.target.files[0])} /></label>
-                                                        {item.paymentFile && <button onClick={()=>setPreviewFile(item.paymentFile)} className="text-[10px] underline text-blue-500">View</button>}
+                                                        <label className={`cursor-pointer p-1 rounded ${item.paymentFile ? 'text-blue-500' : 'text-slate-300'}`}><Icon name="credit-card" size={16} /><input type="file" className="hidden" accept="image/*" onChange={(e)=>handleFileUpload(item.id, 'paymentFile', e.target.files[0])} /></label>
+                                                        {item.paymentFile && <button onClick={()=>setPreviewFile(item.paymentFile)} className="text-[10px] text-blue-500 underline">V</button>}
                                                     </td>
                                                     <td className="p-2"><input className="excel-input text-slate-500" value={item.note} placeholder="메모..." onChange={(e)=>{const n=[...selectedTrip.items]; n[idx].note=e.target.value; setSelectedTrip({...selectedTrip, items:n});}} /></td>
                                                     <td className="p-2 text-center">{userRole === 'admin' && <button onClick={()=>{const n=selectedTrip.items.filter(i=>i.id!==item.id); setSelectedTrip({...selectedTrip, items:n});}} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={14} /></button>}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
+                                        {userRole === 'admin' && (
+                                            <tfoot>
+                                                <tr className="bg-slate-100 font-black text-xs border-t-2 border-slate-300">
+                                                    <td colSpan="6" className="p-3 text-center"><button onClick={()=>{const newId=Date.now(); setSelectedTrip({...selectedTrip, items:[...selectedTrip.items, {id:newId, date:getToday(), time:'09:00', category:'기타', content:'', qty:1, unit:'회', costVnd:0, priceVnd:0, booking:'미정', note:'', bookingFile:null, paymentFile:null}]});}} className="bg-white border px-3 py-1 rounded shadow-sm hover:bg-slate-50">+ Add Row</button></td>
+                                                    <td colSpan="2" className="p-3 text-right text-red-600">{formatMoney(calculateTotal(selectedTrip.items, 'costVnd'), 'VND')}</td>
+                                                    <td colSpan="2" className="p-3 text-right text-blue-700 text-sm">{formatMoney(calculateTotal(selectedTrip.items, 'priceVnd'), 'VND')}</td>
+                                                    <td colSpan="4"></td>
+                                                </tr>
+                                            </tfoot>
+                                        )}
                                     </table>
-                                    {userRole === 'admin' && <div className="mt-8 mb-20 text-center"><button onClick={()=>{const newId=Date.now(); setSelectedTrip({...selectedTrip, items:[...selectedTrip.items, {id:newId, date:getToday(), time:'09:00', category:'기타', content:'', qty:1, unit:'회', costVnd:0, priceVnd:0, booking:'미정', note:'', bookingFile:null, paymentFile:null}]});}} className="bg-slate-100 text-slate-600 px-6 py-3 rounded-full font-bold shadow-sm hover:bg-slate-200 inline-flex items-center gap-2"><Icon name="plus" /> 행 추가</button></div>}
                                 </div>
                             </div>
                             <button onClick={() => { alert('저장되었습니다. (Đã lưu)'); setSelectedTrip(null); }} className="fab-button bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95"><Icon name="save" size={24} /></button>
