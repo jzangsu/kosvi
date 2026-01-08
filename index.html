@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOSVI Travel Manager - Integrated Master</title>
+    <title>KOSVI Travel Manager - Integrated System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,9 +17,19 @@
         .ceo-card { background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); color: white; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* 엑셀 스타일 입력 필드 */
+        .excel-input { 
+            background: transparent; 
+            border: 1px solid transparent; 
+            width: 100%; 
+            padding: 4px; 
+            border-radius: 4px; 
+            transition: all 0.2s;
+        }
+        .excel-input:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .excel-input:focus { border-color: #3b82f6; background: #ffffff; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+        /* 테이블 헤더 고정 */
+        .sticky-header th { position: sticky; top: 0; background: #f1f5f9; z-index: 10; }
     </style>
 </head>
 <body class="bg-[#f1f5f9]">
@@ -27,37 +37,30 @@
 
     <script type="text/babel">
         /**
-         * [🚀 PROJECT MASTER GUIDE - Gemini 전용 기억 저장소]
-         * ---------------------------------------------------------
-         * 1. 사용자 정보: 허창수 법인장 (CEO, KOSVI Travel)
-         * 2. 프로젝트: KOSVI 여행사 통합 관리 시스템 (v10.0 - 엑셀형 통합 편집기)
-         * 3. 핵심 규칙:
-         * - UI: 일정(좌) + 견적(우) 통합 워크시트. 
-         * - 금융: 변동 환율 적용 및 통화 선택(KRW, USD, VND).
-         * - 보안: CEO(admin/1234), Staff1(staff1/1111), Staff2(staff2/2222).
-         * ---------------------------------------------------------
+         * [🚀 PROJECT MASTER GUIDE]
+         * 1. 사용자: 허창수 법인장 (KOSVI)
+         * 2. 계정: admin(1234), staff1(1111), staff2(2222)
+         * 3. 핵심: 일정+견적 한 줄 통합, 변동 환율, 한-베 병기
          */
 
         const { useState, useEffect, useMemo } = React;
 
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name, size, className]);
+        const Icon = ({ name, size = 18, className = "" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        const KosviLogo = ({ className = "" }) => (
-            <div className={`flex items-center gap-3 ${className}`}>
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-                    <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 20L80 80M80 20L20 80" stroke="white" strokeWidth="12" strokeLinecap="round"/>
-                        <circle cx="50" cy="50" r="15" fill="#f8fafc" stroke="white" strokeWidth="4"/>
+        const KosviLogo = () => (
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                        <path d="M20 20L80 80M80 20L20 80" stroke="white" strokeWidth="14" strokeLinecap="round"/>
+                        <circle cx="50" cy="50" r="18" fill="#f8fafc" stroke="white" strokeWidth="4"/>
                     </svg>
                 </div>
-                <div className="flex flex-col text-left">
-                    <span className="text-xl font-black text-slate-800 leading-none tracking-tighter italic">KOSVI</span>
-                    <span className="text-[10px] font-extrabold text-blue-600 tracking-[0.25em] leading-tight uppercase text-nowrap">Vietnam Master</span>
+                <div className="flex flex-col">
+                    <span className="text-xl font-black text-slate-800 leading-none italic">KOSVI</span>
+                    <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Vietnam Travel</span>
                 </div>
             </div>
         );
@@ -65,225 +68,268 @@
         const INITIAL_TRIPS = [
             { 
                 id: 1, 
-                title: '임창호 님 호치민 3박 4일 패키지', 
+                title: '임창호 님 호치민 3박 4일', 
                 client: '임창호 님', 
                 pax: 3, 
                 date: '2026-01-13',
-                endDate: '2026-01-16',
-                exchangeRate: 5.54, 
-                currency: 'KRW',
-                bookingStatus: '확정',
-                itinerary: [
-                    { day: 1, title: '호치민 입국 및 미팅', activities: ['공항 픽업', '호텔 체크인', '중식(신밧드케밥)'] },
-                    { day: 2, title: '트윈도브스 골프 라운딩', activities: ['18홀 라운딩', '석식(한솔식당)', '마사지 90분'] }
-                ],
-                quoteItems: [
-                    { name: 'S2 차량 지원 (6일분)', costVnd: 3354600, priceVnd: 6300000, qty: 6 },
-                    { name: 'Twin Doves Golf', costVnd: 6300000, priceVnd: 8500000, qty: 2 },
-                    { name: 'Landmark Plus Hotel', costVnd: 10950000, priceVnd: 13687500, qty: 3 }
-                ],
-                staffNote: '예약 완료.'
+                exchangeRate: 5.54, // 초기 환율
+                targetCurrency: 'KRW',
+                status: '진행중',
+                // 통합된 데이터 구조 (일정 + 견적)
+                items: [
+                    { id: 1, day: 'Day 1', content: '공항 픽업 및 미팅', category: '차량', qty: 1, unit: '회', cost: 500000, price: 800000, booking: '확정', note: '기사 배정 완료' },
+                    { id: 2, day: 'Day 1', content: '호텔 체크인 (랜드마크)', category: '호텔', qty: 3, unit: '박', cost: 3650000, price: 4500000, booking: '대기', note: '바우처 대기중' },
+                    { id: 3, day: 'Day 2', content: '트윈도브스 골프 18홀', category: '골프', qty: 3, unit: '명', cost: 3150000, price: 4200000, booking: '확정', note: '티오프 08:00' },
+                    { id: 4, day: 'Day 2', content: '석식 (한솔식당)', category: '식사', qty: 3, unit: '인', cost: 300000, price: 500000, booking: '미정', note: '' },
+                ]
             }
         ];
 
         const MainApp = ({ userRole, onLogout }) => {
-            const [viewMode, setViewMode] = useState('list'); 
             const [trips, setTrips] = useState(INITIAL_TRIPS);
             const [selectedTrip, setSelectedTrip] = useState(null);
 
-            const formatMoney = (val, curr = 'VND', rate = 1) => {
-                if (curr === 'VND') return val.toLocaleString() + ' ₫';
-                return (val / rate).toLocaleString(undefined, { maximumFractionDigits: 0 }) + (curr === 'KRW' ? ' 원' : ' $');
+            // 환율 계산 함수
+            const calculateTotal = (items, type) => items.reduce((acc, item) => acc + (item[type] * item.qty), 0);
+            
+            const convertCurrency = (vndAmount, rate, currency) => {
+                if (currency === 'VND') return vndAmount;
+                if (currency === 'USD') return vndAmount / 23500; // 대략적인 USD 환율 (고정값 예시, 필요시 이것도 변수로)
+                return vndAmount / rate; // KRW 등은 입력된 환율로 나눔
+            };
+
+            const formatMoney = (amount, currency) => {
+                return amount.toLocaleString(undefined, { maximumFractionDigits: 0 }) + (currency === 'VND' ? ' ₫' : currency === 'KRW' ? ' 원' : ' $');
             };
 
             return (
                 <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in">
-                    <aside className="w-80 sidebar-gradient text-white flex flex-col shrink-0 z-30 shadow-2xl">
-                        <div className="p-8 bg-white mb-6"><KosviLogo /></div>
-                        <nav className="flex-1 px-4 space-y-2">
-                            <NavItem active={viewMode === 'list'} onClick={() => setViewMode('list')} icon="layout-dashboard" label="현황 리스트" />
-                            <NavItem active={viewMode === 'calendar'} onClick={() => setViewMode('calendar')} icon="calendar" label="운영 캘린더" />
-                        </nav>
-                        <div className="p-6 border-t border-slate-800 space-y-4">
-                            <div className="p-5 bg-slate-800/40 rounded-[2rem] border border-slate-700">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 italic">Login Role</p>
-                                <p className="text-sm font-black text-blue-400">{userRole.toUpperCase()}</p>
+                    {/* 사이드바 */}
+                    <aside className="w-72 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
+                        <div className="p-6 bg-white"><KosviLogo /></div>
+                        <div className="p-6">
+                            <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700">
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Signed in as</p>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${userRole === 'admin' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                                    <span className="font-bold text-lg">{userRole === 'admin' ? '허창수 법인장' : userRole === 'staff1' ? '직원 1 (Staff)' : '직원 2 (Staff)'}</span>
+                                </div>
                             </div>
-                            <button onClick={onLogout} className="w-full py-3 bg-slate-700 hover:bg-red-900/40 text-slate-400 rounded-xl text-xs font-black transition-all italic">LOGOUT</button>
+                        </div>
+                        <nav className="flex-1 px-4 space-y-2">
+                            <button className="w-full flex items-center gap-4 px-6 py-4 bg-blue-600 rounded-2xl text-white font-bold shadow-lg"><Icon name="layout-dashboard" /> 현황 / Dashboard</button>
+                            <button className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:bg-slate-800 rounded-2xl transition-all font-medium"><Icon name="calendar" /> 일정 / Lịch trình</button>
+                        </nav>
+                        <div className="p-6">
+                            <button onClick={onLogout} className="w-full py-3 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                <Icon name="log-out" size={14} /> 로그아웃 (Đăng xuất)
+                            </button>
                         </div>
                     </aside>
 
+                    {/* 메인 콘텐츠 */}
                     <main className="flex-1 overflow-y-auto flex flex-col">
-                        <header className="glass-panel sticky top-0 px-10 py-6 flex justify-between items-center z-20 shadow-sm border-b border-slate-200/50">
-                            <h2 className="text-2xl font-black text-slate-800 tracking-tighter italic uppercase">KOSVI Integrated Workspace</h2>
+                        <header className="glass-panel sticky top-0 px-8 py-5 flex justify-between items-center z-20 shadow-sm">
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">KOSVI Integrated Manager</h2>
+                            <button className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all">
+                                <Icon name="plus" size={16} /> 새 견적 생성 (Tạo mới)
+                            </button>
                         </header>
 
-                        <div className="p-10 space-y-10 max-w-[1600px] mx-auto w-full">
-                            <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl overflow-hidden">
-                                <div className="px-10 py-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-widest">Active Master List</h3>
-                                    <button className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black text-[11px] shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all uppercase"><Icon name="plus" size={14} /> New Schedule</button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left font-bold">
-                                        <thead>
-                                            <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 bg-slate-50/30">
-                                                <th className="px-10 py-6">Customer</th>
-                                                <th className="px-10 py-6 text-center">Status</th>
-                                                {userRole === 'ceo' && <th className="px-10 py-6 text-right">Revenue</th>}
-                                                <th className="px-10 py-6 text-right">Action</th>
+                        <div className="p-8 max-w-[1600px] mx-auto w-full">
+                            {/* 리스트 뷰 */}
+                            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                                <table className="w-full text-left font-bold">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                            <th className="px-8 py-5">고객명 (Khách hàng)</th>
+                                            <th className="px-8 py-5">일정 (Lịch trình)</th>
+                                            <th className="px-8 py-5 text-center">상태 (Trạng thái)</th>
+                                            {userRole === 'admin' && <th className="px-8 py-5 text-right">총 견적 (Tổng giá)</th>}
+                                            <th className="px-8 py-5 text-right">관리 (Quản lý)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {trips.map(trip => (
+                                            <tr key={trip.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-8 py-6 text-lg text-slate-800">{trip.client}</td>
+                                                <td className="px-8 py-6 text-slate-500 text-sm">{trip.title} <span className="text-blue-500 font-bold">({trip.pax}명)</span></td>
+                                                <td className="px-8 py-6 text-center"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">{trip.status}</span></td>
+                                                {userRole === 'admin' && (
+                                                    <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">
+                                                        {formatMoney(convertCurrency(calculateTotal(trip.items, 'price'), trip.exchangeRate, trip.targetCurrency), trip.targetCurrency)}
+                                                    </td>
+                                                )}
+                                                <td className="px-8 py-6 text-right">
+                                                    <button onClick={() => setSelectedTrip({...trip})} className="p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:text-blue-600 shadow-sm transition-all">
+                                                        <Icon name="edit-3" />
+                                                    </button>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {trips.map(trip => (
-                                                <tr key={trip.id} className="group hover:bg-slate-50 transition-all">
-                                                    <td className="px-10 py-8">
-                                                        <p className="font-black text-slate-900 text-lg leading-tight">{trip.client}</p>
-                                                        <p className="text-[10px] text-blue-600 font-bold mt-1 uppercase">{trip.date} · {trip.pax} Pax</p>
-                                                    </td>
-                                                    <td className="px-10 py-8 text-center font-black">
-                                                        <span className={`inline-block px-4 py-2 rounded-full text-[10px] tracking-widest ${trip.bookingStatus === '확정' ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600 animate-pulse'}`}>
-                                                            {trip.bookingStatus === '확정' ? 'CONFIRMED' : 'PENDING'}
-                                                        </span>
-                                                    </td>
-                                                    {userRole === 'ceo' && <td className="px-10 py-8 text-right font-black italic">{formatMoney(trip.quoteItems.reduce((a,b)=>a+(b.priceVnd*b.qty),0))}</td>}
-                                                    <td className="px-10 py-8 text-right">
-                                                        <button onClick={() => setSelectedTrip(trip)} className="p-4 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 hover:text-blue-600 shadow-sm transition-all"><Icon name="edit-3" /></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </main>
 
-                    {/* [통합 엑셀 마스터 워크시트 모달] */}
+                    {/* 통합 워크시트 모달 (엑셀형) */}
                     {selectedTrip && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300 p-8">
-                            <div className="bg-white w-full max-w-[1500px] h-[95vh] shadow-2xl rounded-[4rem] flex flex-col overflow-hidden border border-white/20">
-                                <div className="px-12 py-8 border-b border-slate-100 bg-slate-900 text-white flex justify-between items-center">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-6 animate-fade-in">
+                            <div className="bg-white w-full max-w-[1500px] h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
+                                {/* 모달 헤더: 환율 설정 및 요약 */}
+                                <div className="px-10 py-6 bg-slate-900 text-white flex justify-between items-center shrink-0">
                                     <div>
-                                        <h3 className="text-3xl font-black tracking-tighter italic uppercase">{selectedTrip.client} 통합 워크시트</h3>
-                                        <div className="flex items-center gap-6 mt-2">
-                                            <p className="text-blue-400 text-[11px] font-black tracking-[0.3em] uppercase italic">{selectedTrip.date} ~ {selectedTrip.endDate}</p>
-                                            {userRole === 'ceo' && (
-                                                <div className="flex items-center gap-4 border-l border-white/20 pl-6">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase">환율설정:</span>
-                                                        <input type="number" className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-xs font-black w-20 outline-none focus:bg-white/20 transition-all" defaultValue={selectedTrip.exchangeRate} />
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase">통화:</span>
-                                                        <select className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-black outline-none cursor-pointer">
-                                                            <option className="text-black">KRW</option>
-                                                            <option className="text-black">VND</option>
-                                                            <option className="text-black">USD</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <h3 className="text-2xl font-black italic">{selectedTrip.client} 통합 워크시트</h3>
+                                        <p className="text-slate-400 text-xs mt-1 font-medium">{selectedTrip.date} ~ {selectedTrip.endDate} (PAX: {selectedTrip.pax})</p>
                                     </div>
-                                    <button onClick={() => setSelectedTrip(null)} className="p-6 bg-white/10 rounded-[2.5rem] hover:bg-white/20 transition-all"><Icon name="x" size={28} /></button>
-                                </div>
-
-                                <div className="flex-1 flex overflow-hidden">
-                                    {/* 왼쪽: 일정 (Itinerary) */}
-                                    <div className="w-1/2 p-12 overflow-y-auto border-r border-slate-100 bg-white">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-10 flex items-center gap-2 italic">
-                                            <Icon name="map-pin" size={16} className="text-blue-600" /> 01. TRAVEL ITINERARY
-                                        </h4>
-                                        <div className="space-y-12">
-                                            {selectedTrip.itinerary.map((day, idx) => (
-                                                <div key={idx} className="flex gap-8 group">
-                                                    <div className="w-12 h-12 rounded-[1.5rem] bg-slate-900 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-lg group-hover:scale-110 transition-transform">D-{day.day}</div>
-                                                    <div className="flex-1 space-y-4">
-                                                        <input className="w-full bg-transparent border-b border-dashed border-slate-200 font-black text-xl italic outline-none focus:border-blue-500 transition-all pb-2" defaultValue={day.title} />
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {day.activities.map((act, i) => (
-                                                                <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100 group-hover:bg-blue-50/50 transition-colors">
-                                                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                                                    <input className="bg-transparent w-full outline-none" defaultValue={act} />
-                                                                </div>
-                                                            ))}
-                                                            <button className="text-[10px] font-black text-blue-500 uppercase mt-2 flex items-center gap-1 hover:underline"><Icon name="plus" size={12} /> Add Activity</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* 오른쪽: 견적/원가 및 예약관리 */}
-                                    <div className="w-1/2 p-12 overflow-y-auto bg-slate-50/50">
-                                        {userRole === 'ceo' ? (
-                                            <div className="space-y-10">
-                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic">
-                                                    <Icon name="calculator" size={16} className="text-green-600" /> 02. EXCEL QUOTATION (EDITABLE)
-                                                </h4>
-                                                <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative border border-slate-800 overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-8 opacity-5"><Icon name="shield-check" size={140} /></div>
-                                                    <table className="w-full text-[11px] font-bold">
-                                                        <thead>
-                                                            <tr className="text-slate-500 border-b border-slate-800 uppercase tracking-widest italic">
-                                                                <th className="py-5 text-left">Description</th>
-                                                                <th className="py-5 text-right">Qty</th>
-                                                                <th className="py-5 text-right">Cost (VND)</th>
-                                                                <th className="py-5 text-right text-blue-400">Price (VND)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-800">
-                                                            {selectedTrip.quoteItems.map((item, i) => (
-                                                                <tr key={i} className="hover:bg-white/5 transition-colors">
-                                                                    <td className="py-6"><input className="bg-transparent outline-none w-full italic" defaultValue={item.name} /></td>
-                                                                    <td className="py-6 text-right"><input type="number" className="bg-transparent outline-none w-12 text-right" defaultValue={item.qty} /></td>
-                                                                    <td className="py-6 text-right"><input type="number" className="bg-transparent outline-none text-right text-slate-400" defaultValue={item.costVnd} /></td>
-                                                                    <td className="py-6 text-right text-blue-400"><input type="number" className="bg-transparent outline-none text-right font-black" defaultValue={item.priceVnd} /></td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                        <tfoot>
-                                                            <tr className="border-t border-slate-700 bg-white/5">
-                                                                <td colSpan="2" className="py-10 text-right text-slate-500 font-black uppercase text-[10px] italic">Grand Total (VND)</td>
-                                                                <td colSpan="2" className="py-10 pr-2 text-right text-4xl font-black text-white italic tracking-tighter underline decoration-blue-500 underline-offset-8">
-                                                                    {formatMoney(selectedTrip.quoteItems.reduce((a,b)=>a+(b.priceVnd*b.qty),0))}
-                                                                </td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
+                                    
+                                    {userRole === 'admin' && (
+                                        <div className="flex items-center gap-6 bg-white/10 px-6 py-3 rounded-2xl border border-white/10">
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] text-blue-300 font-bold uppercase">적용 환율 (Rate)</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="bg-transparent border-b border-blue-400 w-20 text-lg font-black outline-none focus:border-white transition-colors"
+                                                    value={selectedTrip.exchangeRate}
+                                                    onChange={(e) => setSelectedTrip({...selectedTrip, exchangeRate: parseFloat(e.target.value)})}
+                                                />
                                             </div>
-                                        ) : (
-                                            <div className="space-y-10">
-                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic"><Icon name="lock" size={16} /> 02. RESERVATION SYSTEM (RESTRICTED)</h4>
-                                                <div className="p-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 text-center flex flex-col items-center shadow-inner">
-                                                    <Icon name="shield-off" size={64} className="text-slate-100 mb-8" />
-                                                    <h5 className="text-xl font-black text-slate-300 tracking-widest uppercase italic">Financial Data Locked</h5>
-                                                    <p className="text-slate-300 font-bold text-xs mt-4">견적 정보는 법인장님 고유 권한입니다.</p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="mt-12 p-10 bg-blue-50/50 border border-blue-100 rounded-[3rem] space-y-8">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2 italic"><Icon name="cloud-upload" size={18} /> Booking & Evidence Master</h4>
-                                                <select className="bg-white border border-blue-200 px-4 py-2 rounded-xl text-[10px] font-black text-blue-600 outline-none shadow-sm" defaultValue={selectedTrip.bookingStatus}>
-                                                    <option>대기 (Pending)</option>
-                                                    <option>확정 (Confirmed)</option>
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] text-blue-300 font-bold uppercase">견적 통화 (Tiền tệ)</label>
+                                                <select 
+                                                    className="bg-slate-800 border border-slate-600 rounded text-sm font-bold px-2 py-1 outline-none"
+                                                    value={selectedTrip.targetCurrency}
+                                                    onChange={(e) => setSelectedTrip({...selectedTrip, targetCurrency: e.target.value})}
+                                                >
+                                                    <option value="KRW">KRW (원)</option>
+                                                    <option value="USD">USD ($)</option>
+                                                    <option value="VND">VND (동)</option>
                                                 </select>
                                             </div>
-                                            <div className="flex gap-6">
-                                                <div className="flex-1 p-10 border-2 border-dashed border-blue-200 rounded-[2.5rem] flex flex-col items-center justify-center bg-white/60 cursor-pointer hover:bg-white transition-all group">
-                                                    <Icon name="file-up" size={32} className="text-blue-300 mb-3 group-hover:scale-125 transition-transform" />
-                                                    <p className="text-[10px] font-black text-blue-400 tracking-tighter">Voucher Upload</p>
-                                                </div>
-                                                <textarea className="flex-[1.5] bg-white border border-slate-200 rounded-[2.5rem] p-8 text-sm font-bold outline-none h-40 shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" placeholder="예약 담당 직원 특이사항 메모..." defaultValue={selectedTrip.staffNote}></textarea>
+                                            <div className="text-right pl-6 border-l border-white/20">
+                                                <p className="text-[10px] text-slate-400 uppercase">Total Estimate</p>
+                                                <p className="text-2xl font-black text-green-400">
+                                                    {formatMoney(convertCurrency(calculateTotal(selectedTrip.items, 'price'), selectedTrip.exchangeRate, selectedTrip.targetCurrency), selectedTrip.targetCurrency)}
+                                                </p>
                                             </div>
-                                            <button className="w-full bg-slate-900 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-2xl active:scale-95 transition-all uppercase italic tracking-widest">Update Master Record</button>
                                         </div>
-                                    </div>
+                                    )}
+                                    <button onClick={() => setSelectedTrip(null)} className="p-3 hover:bg-white/10 rounded-full transition-colors"><Icon name="x" size={24} /></button>
+                                </div>
+
+                                {/* 메인 엑셀 시트 영역 */}
+                                <div className="flex-1 overflow-auto bg-white p-8">
+                                    <table className="w-full text-sm border-collapse">
+                                        <thead className="sticky-header text-xs text-slate-500 uppercase tracking-wider font-bold">
+                                            <tr>
+                                                <th className="p-4 border-b border-slate-200 text-center w-16">Day</th>
+                                                <th className="p-4 border-b border-slate-200 w-24">분류<br/><span className="text-[10px]">Loại</span></th>
+                                                <th className="p-4 border-b border-slate-200 w-[30%]">일정 및 내용<br/><span className="text-[10px]">Nội dung lịch trình</span></th>
+                                                <th className="p-4 border-b border-slate-200 text-center w-16">수량<br/><span className="text-[10px]">SL</span></th>
+                                                <th className="p-4 border-b border-slate-200 text-center w-16">단위<br/><span className="text-[10px]">Đơn vị</span></th>
+                                                
+                                                {/* 관리자 전용: 원가/매출 입력 */}
+                                                {userRole === 'admin' ? (
+                                                    <>
+                                                        <th className="p-4 border-b border-slate-200 text-right bg-red-50/50 w-32">원가 (Cost)<br/><span className="text-[10px]">VND</span></th>
+                                                        <th className="p-4 border-b border-slate-200 text-right bg-blue-50/50 w-32">매출 (Price)<br/><span className="text-[10px]">VND</span></th>
+                                                        <th className="p-4 border-b border-slate-200 text-right w-24">마진<br/><span className="text-[10px]">Lợi nhuận</span></th>
+                                                    </>
+                                                ) : null}
+
+                                                <th className="p-4 border-b border-slate-200 text-center w-24">예약<br/><span className="text-[10px]">Booking</span></th>
+                                                <th className="p-4 border-b border-slate-200 text-left">비고 / 메모<br/><span className="text-[10px]">Ghi chú</span></th>
+                                                <th className="p-4 border-b border-slate-200 text-center w-12"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="font-medium text-slate-700">
+                                            {selectedTrip.items.map((item, idx) => (
+                                                <tr key={item.id} className="group hover:bg-slate-50 border-b border-slate-100">
+                                                    <td className="p-2"><input className="excel-input text-center font-bold text-slate-400" value={item.day} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].day = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input text-center text-slate-600" value={item.category} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].category = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input font-bold text-slate-800" value={item.content} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].content = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input type="number" className="excel-input text-center" value={item.qty} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].qty = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input text-center text-slate-400" value={item.unit} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].unit = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+
+                                                    {userRole === 'admin' ? (
+                                                        <>
+                                                            <td className="p-2 bg-red-50/30"><input type="number" className="excel-input text-right text-red-400 font-bold" value={item.cost} onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].cost = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }} /></td>
+                                                            <td className="p-2 bg-blue-50/30"><input type="number" className="excel-input text-right text-blue-600 font-black" value={item.price} onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].price = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }} /></td>
+                                                            <td className="p-4 text-right text-xs font-bold text-slate-400">
+                                                                {item.price > 0 ? Math.round(((item.price - item.cost)/item.price)*100) + '%' : '-'}
+                                                            </td>
+                                                        </>
+                                                    ) : null}
+
+                                                    <td className="p-2 text-center">
+                                                        <select 
+                                                            className={`text-xs font-bold px-2 py-1 rounded border outline-none cursor-pointer ${item.booking === '확정' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`}
+                                                            value={item.booking}
+                                                            onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].booking = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }}
+                                                        >
+                                                            <option value="미정">미정 (Chưa)</option>
+                                                            <option value="대기">대기 (Chờ)</option>
+                                                            <option value="확정">확정 (OK)</option>
+                                                        </select>
+                                                    </td>
+
+                                                    <td className="p-2 flex items-center gap-2">
+                                                        <input className="excel-input text-xs text-slate-500" value={item.note} placeholder="메모 입력..." onChange={(e)=>{
+                                                            const newItems = [...selectedTrip.items]; newItems[idx].note = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                        }} />
+                                                        <label className="cursor-pointer text-slate-300 hover:text-blue-500">
+                                                            <Icon name="upload" size={14} />
+                                                            <input type="file" className="hidden" onChange={()=>{ alert('파일이 업로드되었습니다 (시뮬레이션)'); }} />
+                                                        </label>
+                                                    </td>
+
+                                                    <td className="p-2 text-center">
+                                                        {userRole === 'admin' && <button onClick={()=>{
+                                                            const newItems = selectedTrip.items.filter(i => i.id !== item.id);
+                                                            setSelectedTrip({...selectedTrip, items: newItems});
+                                                        }} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16} /></button>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        {userRole === 'admin' && (
+                                            <tfoot>
+                                                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                                                    <td colSpan="3" className="p-4 text-center">
+                                                        <button onClick={()=>{
+                                                            const newId = Math.max(...selectedTrip.items.map(i=>i.id)) + 1;
+                                                            setSelectedTrip({...selectedTrip, items: [...selectedTrip.items, { id: newId, day: 'New', content: '', category: '', qty: 1, unit: '', cost: 0, price: 0, booking: '미정', note: '' }]});
+                                                        }} className="text-xs font-bold bg-white border border-slate-300 px-4 py-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm">+ 행 추가 (Thêm dòng)</button>
+                                                    </td>
+                                                    <td colSpan="2" className="p-4 text-right font-black text-slate-500 uppercase text-xs tracking-widest">TOTAL (VND)</td>
+                                                    <td className="p-4 text-right font-bold text-slate-400">{formatMoney(calculateTotal(selectedTrip.items, 'cost'), 'VND')}</td>
+                                                    <td className="p-4 text-right font-black text-blue-600 text-lg">{formatMoney(calculateTotal(selectedTrip.items, 'price'), 'VND')}</td>
+                                                    <td colSpan="4"></td>
+                                                </tr>
+                                            </tfoot>
+                                        )}
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -296,7 +342,6 @@
             const [authState, setAuthState] = useState({ isLoggedIn: false, role: null });
             const login = (role) => setAuthState({ isLoggedIn: true, role });
             const logout = () => setAuthState({ isLoggedIn: false, role: null });
-
             return authState.isLoggedIn ? <MainApp userRole={authState.role} onLogout={logout} /> : <LoginPage onLogin={login} />;
         };
 
@@ -304,35 +349,27 @@
             const [id, setId] = useState('');
             const [pw, setPw] = useState('');
             const [error, setError] = useState('');
-
             const handleLogin = (e) => {
                 e.preventDefault();
-                if (id === 'admin' && pw === '1234') onLogin('ceo');
+                if (id === 'admin' && pw === '1234') onLogin('admin');
                 else if (id === 'staff1' && pw === '1111') onLogin('staff1');
                 else if (id === 'staff2' && pw === '2222') onLogin('staff2');
-                else setError('ID/Security Key Error');
+                else setError('ID hoặc Mật khẩu không đúng (잘못된 정보)');
             };
-
             return (
-                <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-6">
-                    <div className="bg-white p-20 rounded-[5rem] shadow-2xl w-full max-w-lg animate-fade-in border border-slate-100">
-                        <KosviLogo className="justify-center mb-16" />
-                        <form onSubmit={handleLogin} className="space-y-8">
-                            <input type="text" className="w-full px-10 py-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-black italic shadow-inner focus:ring-8 focus:ring-blue-500/5 transition-all" placeholder="USER ID" value={id} onChange={(e) => setId(e.target.value)} />
-                            <input type="password" className="w-full px-10 py-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-black italic shadow-inner focus:ring-8 focus:ring-blue-500/5 transition-all" placeholder="SECURITY KEY" value={pw} onChange={(e) => setPw(e.target.value)} />
-                            {error && <p className="text-red-500 text-xs font-black text-center uppercase tracking-widest italic">{error}</p>}
-                            <button type="submit" className="w-full bg-blue-600 text-white py-7 rounded-[2.5rem] font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all text-xl uppercase italic">Enter System</button>
+                <div className="min-h-screen flex items-center justify-center bg-[#f1f5f9] p-6">
+                    <div className="bg-white p-16 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-200">
+                        <div className="flex justify-center mb-10"><KosviLogo /></div>
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <input type="text" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-bold text-center" placeholder="ID (admin / staff1 / staff2)" value={id} onChange={(e) => setId(e.target.value)} />
+                            <input type="password" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-bold text-center" placeholder="PASSWORD" value={pw} onChange={(e) => setPw(e.target.value)} />
+                            {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+                            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest">Đăng nhập (Login)</button>
                         </form>
                     </div>
                 </div>
             );
         };
-
-        const NavItem = ({ active, icon, label, onClick }) => (
-            <button onClick={onClick} className={`w-full flex items-center gap-5 px-10 py-6 rounded-[2.5rem] transition-all duration-300 ${active ? 'bg-blue-600 text-white shadow-2xl font-black scale-105' : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 font-bold'}`}>
-                <Icon name={icon} size={22} /> <span className="text-[11px] tracking-widest uppercase font-black">{label}</span>
-            </button>
-        );
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
