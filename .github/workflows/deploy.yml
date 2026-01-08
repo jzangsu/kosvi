@@ -13,5 +13,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI }}
           channelId: live
-          projectId: kosvi-travel
-           
+          projectId: kosvi-travel 
