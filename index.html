@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOSVI Travel Manager - Integrated System</title>
+    <title>KOSVI Travel Manager - Vietnam Integrated</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -31,6 +31,24 @@
         /* 테이블 헤더 고정 */
         .sticky-header th { position: sticky; top: 0; background: #f1f5f9; z-index: 10; }
         .calendar-day { min-height: 100px; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
+        
+        /* 인쇄 전용 스타일 */
+        @media print {
+            @page { size: A4; margin: 20mm; }
+            body { background: white; -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .print-container { 
+                position: fixed; 
+                top: 0; 
+                left: 0; 
+                width: 100%; 
+                height: 100%; 
+                background: white; 
+                z-index: 9999; 
+                overflow: visible;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#f1f5f9]">
@@ -41,7 +59,8 @@
          * [🚀 PROJECT MASTER GUIDE]
          * 1. 사용자: 허창수 법인장 (KOSVI)
          * 2. 계정: admin(1234), staff1(1111), staff2(2222)
-         * 3. 핵심: 일정+견적 통합, 캘린더+리스트 동시 뷰, 상세 항공 정보(출/도착 시간)
+         * 3. 핵심: 일정+견적 통합, 캘린더+리스트 동시 뷰, 상세 항공 정보
+         * 4. 신규기능: 손님용 견적서 출력 (세부 금액 숨김, 총액 노출, 계좌 정보 포함)
          */
 
         const { useState, useEffect, useMemo } = React;
@@ -51,16 +70,16 @@
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        const KosviLogo = () => (
+        const KosviLogo = ({ dark = false }) => (
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${dark ? 'bg-slate-900' : 'bg-blue-600'}`}>
                     <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
                         <path d="M20 20L80 80M80 20L20 80" stroke="white" strokeWidth="14" strokeLinecap="round"/>
-                        <circle cx="50" cy="50" r="18" fill="#f8fafc" stroke="white" strokeWidth="4"/>
+                        <circle cx="50" cy="50" r="18" fill={dark ? "#1e293b" : "#f8fafc"} stroke="white" strokeWidth="4"/>
                     </svg>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xl font-black text-slate-800 leading-none italic">KOSVI</span>
+                    <span className={`text-xl font-black leading-none italic ${dark ? 'text-slate-900' : 'text-slate-800'}`}>KOSVI</span>
                     <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Vietnam Travel</span>
                 </div>
             </div>
@@ -100,6 +119,8 @@
         const MainApp = ({ userRole, onLogout }) => {
             const [trips, setTrips] = useState(INITIAL_TRIPS);
             const [selectedTrip, setSelectedTrip] = useState(null);
+            const [showCustomerQuote, setShowCustomerQuote] = useState(false); // 손님용 견적서 보기 모드
+
             // 캘린더용 (현재 월)
             const currentYear = 2026;
             const currentMonth = 0; // 1월 (0-indexed)
@@ -114,7 +135,7 @@
             };
 
             const formatMoney = (amount, currency) => {
-                return amount.toLocaleString(undefined, { maximumFractionDigits: 0 }) + (currency === 'VND' ? ' ₫' : currency === 'KRW' ? ' 원' : ' $');
+                return Math.round(amount).toLocaleString(undefined, { maximumFractionDigits: 0 }) + (currency === 'VND' ? ' ₫' : currency === 'KRW' ? ' 원' : ' $');
             };
 
             // 캘린더 생성 로직
@@ -124,8 +145,120 @@
             for (let i = 0; i < firstDayOfMonth; i++) calendarCells.push(null);
             for (let i = 1; i <= daysInMonth; i++) calendarCells.push(i);
 
+            // 손님용 견적서 뷰
+            if (showCustomerQuote && selectedTrip) {
+                const totalVND = calculateTotal(selectedTrip.items, 'price');
+                const finalPrice = convertCurrency(totalVND, selectedTrip.exchangeRate, selectedTrip.targetCurrency);
+                
+                return (
+                    <div className="fixed inset-0 z-[200] bg-white overflow-y-auto print-container">
+                        <div className="max-w-[210mm] mx-auto min-h-screen bg-white p-12 shadow-2xl my-10 relative print:shadow-none print:m-0 print:p-0">
+                            {/* 상단 버튼 (인쇄 시 숨김) */}
+                            <div className="absolute top-4 right-4 flex gap-2 no-print">
+                                <button onClick={() => window.print()} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Icon name="printer" /> 인쇄/PDF 저장</button>
+                                <button onClick={() => setShowCustomerQuote(false)} className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
+                            </div>
+
+                            {/* 견적서 헤더 */}
+                            <div className="flex justify-between items-end border-b-2 border-blue-600 pb-6 mb-8">
+                                <div>
+                                    <KosviLogo dark={true} />
+                                    <p className="text-slate-500 text-sm font-medium mt-2">여행 견적서 (Quotation)</p>
+                                </div>
+                                <div className="text-right">
+                                    <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter mb-1">INVOICE & ITINERARY</h1>
+                                    <p className="text-sm font-bold text-slate-500">Date: {new Date().toISOString().split('T')[0]}</p>
+                                </div>
+                            </div>
+
+                            {/* 고객 정보 */}
+                            <div className="grid grid-cols-2 gap-8 mb-10">
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                    <h3 className="text-blue-600 font-black text-xs uppercase tracking-widest mb-4">Customer Info</h3>
+                                    <div className="space-y-2 text-sm font-bold text-slate-700">
+                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>고객명</span> <span>{selectedTrip.client} 님 (외 {selectedTrip.pax - 1}명)</span></div>
+                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>여행 기간</span> <span>{selectedTrip.startDate} ~ {selectedTrip.endDate}</span></div>
+                                        <div className="flex justify-between pt-1"><span>총 인원</span> <span>{selectedTrip.pax} 명</span></div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                    <h3 className="text-blue-600 font-black text-xs uppercase tracking-widest mb-4">Flight Info</h3>
+                                    <div className="space-y-2 text-sm font-bold text-slate-700">
+                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>[입국] {selectedTrip.flightInfo.in.flight}</span> <span>{selectedTrip.flightInfo.in.depTime} ✈ {selectedTrip.flightInfo.in.arrTime}</span></div>
+                                        <div className="flex justify-between pt-1"><span>[출국] {selectedTrip.flightInfo.out.flight}</span> <span>{selectedTrip.flightInfo.out.depTime} ✈ {selectedTrip.flightInfo.out.arrTime}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 일정 및 포함 내역 (세부 가격 숨김) */}
+                            <div className="mb-10">
+                                <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><Icon name="list" size={20} className="text-blue-600" /> 상세 일정 및 포함 내역</h3>
+                                <table className="w-full text-sm text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-100 text-slate-500 uppercase text-xs font-bold">
+                                            <th className="p-4 rounded-tl-xl">Day / Date</th>
+                                            <th className="p-4">내용 (Description)</th>
+                                            <th className="p-4 text-center">수량</th>
+                                            <th className="p-4 text-center rounded-tr-xl">단위</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-slate-700 font-medium">
+                                        {selectedTrip.items.map((item, idx) => (
+                                            <tr key={idx} className="border-b border-slate-100">
+                                                <td className="p-4 font-bold bg-slate-50/50 w-32">
+                                                    {item.dayOfTrip}일차<br/>
+                                                    <span className="text-[10px] text-slate-400 font-normal">{item.date}</span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="font-bold text-slate-800">{item.content}</span>
+                                                    <span className="ml-2 text-xs text-white bg-slate-400 px-1.5 py-0.5 rounded">{item.category}</span>
+                                                </td>
+                                                <td className="p-4 text-center">{item.qty}</td>
+                                                <td className="p-4 text-center text-slate-500">{item.unit}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* 총액 및 계좌 정보 */}
+                            <div className="flex justify-end mb-12">
+                                <div className="w-1/2 bg-blue-600 text-white p-8 rounded-3xl shadow-xl text-right">
+                                    <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">Total Amount (VAT Included)</p>
+                                    <h2 className="text-4xl font-black tracking-tighter underline underline-offset-8 decoration-4 decoration-white/30">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</h2>
+                                    <p className="text-xs font-medium text-blue-100 mt-4 opacity-80">
+                                        * 상기 견적은 {selectedTrip.targetCurrency} 기준이며, 환율 변동에 따라 변경될 수 있습니다.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 하단 계좌 정보 (엑셀 데이터 반영) */}
+                            <div className="border-t-2 border-dashed border-slate-200 pt-8 grid grid-cols-2 gap-8 text-sm">
+                                <div>
+                                    <h4 className="font-black text-slate-800 mb-2 flex items-center gap-2"><Icon name="credit-card" size={16} /> 계좌 정보 (Payment Info)</h4>
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                        {selectedTrip.targetCurrency === 'KRW' ? (
+                                            <p className="font-bold text-slate-700">KRW: 토스뱅크 1000-1841-9143 (예금주: 허창수)</p>
+                                        ) : (
+                                            <p className="font-bold text-slate-700">VND: 신한베트남 077-890-1861 (예금주: HEO CHANGSU)</p>
+                                        )}
+                                        <p className="text-xs text-slate-400 mt-2">* 입금 시 예약자 성명으로 입금 부탁드립니다.</p>
+                                    </div>
+                                </div>
+                                <div className="text-right text-xs text-slate-400 space-y-1">
+                                    <p className="font-bold text-slate-600 text-sm">KOSVI CO., LTD</p>
+                                    <p>Address: Landmark Plus, Vinhomes Central Park, HCM</p>
+                                    <p>Tel: 0286-270-6413 | Mobile: 077-890-1861</p>
+                                    <p>Kakao: KOSVIVN</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
-                <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in">
+                <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in no-print">
                     {/* 사이드바 */}
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
                         <div className="p-6 bg-white"><KosviLogo /></div>
@@ -207,22 +340,14 @@
                                 <div className="grid grid-cols-7 flex-1 bg-white">
                                     {calendarCells.map((day, idx) => {
                                         if (!day) return <div key={idx} className="calendar-day bg-slate-50/30"></div>;
-                                        
-                                        // 해당 날짜의 일정 찾기
                                         const dateStr = `2026-01-${String(day).padStart(2, '0')}`;
                                         const dayTrips = trips.filter(t => t.startDate <= dateStr && t.endDate >= dateStr);
-
                                         return (
                                             <div key={idx} className="calendar-day p-2 relative hover:bg-slate-50 transition-colors">
                                                 <span className={`text-xs font-bold ${idx % 7 === 0 ? 'text-red-400' : idx % 7 === 6 ? 'text-blue-400' : 'text-slate-400'}`}>{day}</span>
                                                 <div className="mt-1 space-y-1">
                                                     {dayTrips.map(t => (
-                                                        <div key={t.id} 
-                                                             onClick={() => setSelectedTrip({...t})}
-                                                             className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-1 rounded font-bold truncate cursor-pointer hover:bg-blue-200"
-                                                             title={`${t.client} (${t.flightInfo.in.flight})`}>
-                                                            {t.client} ({t.flightInfo.in.flight})
-                                                        </div>
+                                                        <div key={t.id} onClick={() => setSelectedTrip({...t})} className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-1 rounded font-bold truncate cursor-pointer hover:bg-blue-200" title={t.client}>{t.client}</div>
                                                     ))}
                                                 </div>
                                             </div>
@@ -235,19 +360,27 @@
 
                     {/* 통합 워크시트 모달 (엑셀형) */}
                     {selectedTrip && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-fade-in">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-fade-in no-print">
                             <div className="bg-white w-full max-w-[1600px] h-[95vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
-                                {/* 모달 헤더: 항공 정보 상세 포함 */}
+                                {/* 모달 헤더 */}
                                 <div className="px-8 py-6 bg-slate-900 text-white shrink-0">
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h3 className="text-3xl font-black italic tracking-tighter">{selectedTrip.client} 통합 워크시트</h3>
                                             <p className="text-slate-400 text-xs mt-1 font-medium">{selectedTrip.startDate} ~ {selectedTrip.endDate} (PAX: {selectedTrip.pax})</p>
                                         </div>
-                                        <button onClick={() => setSelectedTrip(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><Icon name="x" size={24} /></button>
+                                        <div className="flex gap-2">
+                                            {/* 손님용 견적서 버튼 추가 */}
+                                            {userRole === 'admin' && (
+                                                <button onClick={() => setShowCustomerQuote(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all">
+                                                    <Icon name="printer" size={16} /> 손님용 견적서 발행
+                                                </button>
+                                            )}
+                                            <button onClick={() => setSelectedTrip(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><Icon name="x" size={24} /></button>
+                                        </div>
                                     </div>
 
-                                    {/* 항공 스케줄 상세 박스 */}
+                                    {/* 항공 스케줄 상세 */}
                                     <div className="grid grid-cols-2 gap-4 bg-white/10 p-4 rounded-xl border border-white/10 mb-4">
                                         <div className="flex items-center gap-4 border-r border-white/10 pr-4">
                                             <div className="text-right">
@@ -315,7 +448,6 @@
                                                 <th className="p-3 border-b border-slate-200 text-center w-14">Qty</th>
                                                 <th className="p-3 border-b border-slate-200 text-center w-14">Unit</th>
                                                 
-                                                {/* 관리자 전용: 원가/매출 입력 */}
                                                 {userRole === 'admin' ? (
                                                     <>
                                                         <th className="p-3 border-b border-slate-200 text-right bg-red-50/50 w-28">Cost (VND)</th>
@@ -397,7 +529,6 @@
                                         <div className="mt-4 flex justify-center">
                                             <button onClick={()=>{
                                                 const newId = Math.max(...selectedTrip.items.map(i=>i.id)) + 1;
-                                                // 날짜 계산 편의상 Day 1으로 초기화
                                                 setSelectedTrip({...selectedTrip, items: [...selectedTrip.items, { id: newId, date: selectedTrip.startDate, dayOfTrip: 1, content: '', category: '', qty: 1, unit: '', cost: 0, price: 0, booking: '미정', note: '' }]});
                                             }} className="text-xs font-bold bg-slate-100 text-slate-500 px-6 py-3 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 flex items-center gap-2">
                                                 <Icon name="plus" size={14} /> 행 추가 (Thêm dòng)
