@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOSVI Travel Manager - Vietnam Master</title>
+    <title>KOSVI Travel Manager - Integrated Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -22,33 +22,17 @@
             background: transparent; 
             border: 1px solid transparent; 
             width: 100%; 
-            padding: 4px; 
+            padding: 6px; 
             border-radius: 4px; 
             transition: all 0.2s;
         }
         .excel-input:hover { border-color: #cbd5e1; background: #f8fafc; }
         .excel-input:focus { border-color: #3b82f6; background: #ffffff; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
         /* 테이블 헤더 고정 */
-        .sticky-header th { position: sticky; top: 0; background: #f1f5f9; z-index: 10; }
-        .calendar-day { min-height: 100px; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
-        
-        /* 인쇄 전용 스타일 */
-        @media print {
-            @page { size: A4; margin: 20mm; }
-            body { background: white; -webkit-print-color-adjust: exact; }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            .print-container { 
-                position: fixed; 
-                top: 0; 
-                left: 0; 
-                width: 100%; 
-                height: 100%; 
-                background: white; 
-                z-index: 9999; 
-                overflow: visible;
-            }
-        }
+        .sticky-header th { position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-[#f1f5f9]">
@@ -59,8 +43,7 @@
          * [🚀 PROJECT MASTER GUIDE]
          * 1. 사용자: 허창수 법인장 (KOSVI)
          * 2. 계정: admin(1234), staff1(1111), staff2(2222)
-         * 3. 핵심: 일정(시간 포함)+견적 통합, 캘린더+리스트, 상세 항공 수정
-         * 4. 기능: 손님용 견적서 출력
+         * 3. 핵심: 일정+견적(원가/매출) 한 줄 통합, 변동 환율, 한-베 병기
          */
 
         const { useState, useEffect, useMemo } = React;
@@ -70,24 +53,23 @@
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        const KosviLogo = ({ dark = false }) => (
+        const KosviLogo = () => (
             <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${dark ? 'bg-slate-900' : 'bg-blue-600'}`}>
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                     <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
                         <path d="M20 20L80 80M80 20L20 80" stroke="white" strokeWidth="14" strokeLinecap="round"/>
-                        <circle cx="50" cy="50" r="18" fill={dark ? "#1e293b" : "#f8fafc"} stroke="white" strokeWidth="4"/>
+                        <circle cx="50" cy="50" r="18" fill="#f8fafc" stroke="white" strokeWidth="4"/>
                     </svg>
                 </div>
                 <div className="flex flex-col">
-                    <span className={`text-xl font-black leading-none italic ${dark ? 'text-slate-900' : 'text-slate-800'}`}>KOSVI</span>
+                    <span className="text-xl font-black text-slate-800 leading-none italic">KOSVI</span>
                     <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Vietnam Travel</span>
                 </div>
             </div>
         );
 
-        // 요일 계산 헬퍼
         const getDayOfWeek = (dateString) => {
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const days = ['일(CN)', '월(T2)', '화(T3)', '수(T4)', '목(T5)', '금(T6)', '토(T7)'];
             return days[new Date(dateString).getDay()];
         };
 
@@ -102,183 +84,43 @@
                 exchangeRate: 5.54, 
                 targetCurrency: 'KRW',
                 status: '진행중',
-                // 상세 항공 정보
-                flightInfo: {
-                    in: { flight: 'KE469', depTime: '09:05', arrTime: '12:40', route: 'ICN-SGN' },
-                    out: { flight: 'KE470', depTime: '13:55', arrTime: '21:15', route: 'SGN-ICN' }
-                },
-                // 일정 데이터 구조 변경: { time: '', content: '' }
-                itinerary: [
-                    { 
-                        day: 1, 
-                        title: '호치민 입국 및 미팅', 
-                        activities: [
-                            { time: '12:40', content: '공항 픽업 및 가이드 미팅' },
-                            { time: '13:30', content: '중식 (신밧드케밥)' },
-                            { time: '15:00', content: '호텔 체크인 (랜드마크 플러스)' }
-                        ] 
-                    },
-                    { 
-                        day: 2, 
-                        title: '트윈도브스 골프 라운딩', 
-                        activities: [
-                            { time: '07:00', content: '조식 후 골프장 이동' },
-                            { time: '08:30', content: '트윈도브스 18홀 라운딩' },
-                            { time: '18:00', content: '석식 (한솔식당)' }
-                        ] 
-                    }
-                ],
+                // 통합된 데이터 구조 (일정 + 견적)
                 items: [
-                    { id: 1, date: '2026-01-13', dayOfTrip: 1, content: '공항 픽업 및 미팅', category: '차량', qty: 1, unit: '회', cost: 500000, price: 800000, booking: '확정', note: '기사 배정 완료' },
-                    { id: 2, date: '2026-01-13', dayOfTrip: 1, content: '호텔 체크인 (랜드마크)', category: '호텔', qty: 3, unit: '박', cost: 3650000, price: 4500000, booking: '대기', note: '바우처 대기중' },
-                    { id: 3, date: '2026-01-14', dayOfTrip: 2, content: '트윈도브스 골프 18홀', category: '골프', qty: 3, unit: '명', cost: 3150000, price: 4200000, booking: '확정', note: '티오프 08:00' },
-                    { id: 4, date: '2026-01-14', dayOfTrip: 2, content: '석식 (한솔식당)', category: '식사', qty: 3, unit: '인', cost: 300000, price: 500000, booking: '미정', note: '' },
+                    { id: 1, date: '2026-01-13', time: '12:40', category: '차량', content: '공항 픽업 및 미팅 (S2)', qty: 1, unit: '회', costVnd: 500000, priceVnd: 800000, booking: '확정', note: '기사 배정 완료' },
+                    { id: 2, date: '2026-01-13', time: '15:00', category: '호텔', content: '호텔 체크인 (랜드마크)', qty: 3, unit: '박', costVnd: 3650000, priceVnd: 4500000, booking: '대기', note: '바우처 대기중' },
+                    { id: 3, date: '2026-01-14', time: '08:30', category: '골프', content: '트윈도브스 18홀 라운딩', qty: 3, unit: '명', costVnd: 3150000, priceVnd: 4200000, booking: '확정', note: '' },
+                    { id: 4, date: '2026-01-14', time: '18:00', category: '식사', content: '석식 (한솔식당)', qty: 3, unit: '인', costVnd: 300000, priceVnd: 500000, booking: '미정', note: '' },
                 ]
             }
         ];
 
         const MainApp = ({ userRole, onLogout }) => {
+            const [viewMode, setViewMode] = useState('list'); 
             const [trips, setTrips] = useState(INITIAL_TRIPS);
             const [selectedTrip, setSelectedTrip] = useState(null);
-            const [showCustomerQuote, setShowCustomerQuote] = useState(false); 
-
-            // 캘린더용
-            const currentYear = 2026;
-            const currentMonth = 0; 
 
             // 환율 계산 함수
             const calculateTotal = (items, type) => items.reduce((acc, item) => acc + (item[type] * item.qty), 0);
             
             const convertCurrency = (vndAmount, rate, currency) => {
                 if (currency === 'VND') return vndAmount;
-                if (currency === 'USD') return vndAmount / 23500; 
-                return vndAmount / rate; 
+                if (currency === 'USD') return vndAmount / 23500; // 대략적인 USD 환율 (고정값 예시, 필요시 이것도 변수로)
+                return vndAmount / rate; // KRW 등은 입력된 환율로 나눔
             };
 
             const formatMoney = (amount, currency) => {
                 return Math.round(amount).toLocaleString(undefined, { maximumFractionDigits: 0 }) + (currency === 'VND' ? ' ₫' : currency === 'KRW' ? ' 원' : ' $');
             };
 
-            // 캘린더 생성
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-            const calendarCells = [];
-            for (let i = 0; i < firstDayOfMonth; i++) calendarCells.push(null);
-            for (let i = 1; i <= daysInMonth; i++) calendarCells.push(i);
-
-            // 항공 정보 업데이트
-            const updateFlightInfo = (type, field, value) => {
-                setSelectedTrip(prev => ({
-                    ...prev,
-                    flightInfo: {
-                        ...prev.flightInfo,
-                        [type]: { ...prev.flightInfo[type], [field]: value }
-                    }
-                }));
+            const updateTrip = (updatedTrip) => {
+                setTrips(trips.map(t => t.id === updatedTrip.id ? updatedTrip : t));
+                setSelectedTrip(updatedTrip);
             };
 
-            // 손님용 견적서 뷰
-            if (showCustomerQuote && selectedTrip) {
-                const totalVND = calculateTotal(selectedTrip.items, 'price');
-                const finalPrice = convertCurrency(totalVND, selectedTrip.exchangeRate, selectedTrip.targetCurrency);
-                
-                return (
-                    <div className="fixed inset-0 z-[200] bg-white overflow-y-auto print-container">
-                        <div className="max-w-[210mm] mx-auto min-h-screen bg-white p-12 shadow-2xl my-10 relative print:shadow-none print:m-0 print:p-0">
-                            <div className="absolute top-4 right-4 flex gap-2 no-print">
-                                <button onClick={() => window.print()} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Icon name="printer" /> 인쇄/PDF 저장</button>
-                                <button onClick={() => setShowCustomerQuote(false)} className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">닫기</button>
-                            </div>
-
-                            <div className="flex justify-between items-end border-b-2 border-blue-600 pb-6 mb-8">
-                                <div>
-                                    <KosviLogo dark={true} />
-                                    <p className="text-slate-500 text-sm font-medium mt-2">여행 견적서 (Quotation)</p>
-                                </div>
-                                <div className="text-right">
-                                    <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter mb-1">INVOICE & ITINERARY</h1>
-                                    <p className="text-sm font-bold text-slate-500">Date: {new Date().toISOString().split('T')[0]}</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-8 mb-10">
-                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <h3 className="text-blue-600 font-black text-xs uppercase tracking-widest mb-4">Customer Info</h3>
-                                    <div className="space-y-2 text-sm font-bold text-slate-700">
-                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>고객명</span> <span>{selectedTrip.client} 님 (외 {selectedTrip.pax - 1}명)</span></div>
-                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>여행 기간</span> <span>{selectedTrip.startDate} ~ {selectedTrip.endDate}</span></div>
-                                        <div className="flex justify-between pt-1"><span>총 인원</span> <span>{selectedTrip.pax} 명</span></div>
-                                    </div>
-                                </div>
-                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <h3 className="text-blue-600 font-black text-xs uppercase tracking-widest mb-4">Flight Info</h3>
-                                    <div className="space-y-2 text-sm font-bold text-slate-700">
-                                        <div className="flex justify-between border-b border-slate-200 pb-2"><span>[입국] {selectedTrip.flightInfo.in.flight}</span> <span>{selectedTrip.flightInfo.in.depTime} ✈ {selectedTrip.flightInfo.in.arrTime}</span></div>
-                                        <div className="flex justify-between pt-1"><span>[출국] {selectedTrip.flightInfo.out.flight}</span> <span>{selectedTrip.flightInfo.out.depTime} ✈ {selectedTrip.flightInfo.out.arrTime}</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mb-10">
-                                <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2"><Icon name="list" size={20} className="text-blue-600" /> 상세 일정 (Itinerary)</h3>
-                                <div className="space-y-6">
-                                    {selectedTrip.itinerary.map((day, idx) => (
-                                        <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
-                                            <div className="bg-slate-100 px-4 py-2 font-bold text-slate-700 text-sm flex justify-between">
-                                                <span>Day {day.day}</span>
-                                                <span className="text-slate-500">{day.title}</span>
-                                            </div>
-                                            <div className="p-4 bg-white">
-                                                <ul className="space-y-2 text-sm text-slate-600">
-                                                    {day.activities.map((act, i) => (
-                                                        <li key={i} className="flex gap-4">
-                                                            <span className="font-bold text-blue-600 w-16 text-right">{act.time}</span>
-                                                            <span className="font-medium text-slate-700 border-l border-slate-200 pl-4">{act.content}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end mb-12">
-                                <div className="w-1/2 bg-blue-600 text-white p-8 rounded-3xl shadow-xl text-right">
-                                    <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">Total Amount (VAT Included)</p>
-                                    <h2 className="text-4xl font-black tracking-tighter underline underline-offset-8 decoration-4 decoration-white/30">{formatMoney(finalPrice, selectedTrip.targetCurrency)}</h2>
-                                    <p className="text-xs font-medium text-blue-100 mt-4 opacity-80">
-                                        * 상기 견적은 {selectedTrip.targetCurrency} 기준입니다.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="border-t-2 border-dashed border-slate-200 pt-8 grid grid-cols-2 gap-8 text-sm">
-                                <div>
-                                    <h4 className="font-black text-slate-800 mb-2 flex items-center gap-2"><Icon name="credit-card" size={16} /> 계좌 정보 (Payment Info)</h4>
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                        {selectedTrip.targetCurrency === 'KRW' ? (
-                                            <p className="font-bold text-slate-700">KRW: 토스뱅크 1000-1841-9143 (예금주: 허창수)</p>
-                                        ) : (
-                                            <p className="font-bold text-slate-700">VND: 신한베트남 077-890-1861 (예금주: HEO CHANGSU)</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="text-right text-xs text-slate-400 space-y-1">
-                                    <p className="font-bold text-slate-600 text-sm">KOSVI CO., LTD</p>
-                                    <p>Address: Landmark Plus, Vinhomes Central Park, HCM</p>
-                                    <p>Tel: 0286-270-6413 | Mobile: 077-890-1861</p>
-                                    <p>Kakao: KOSVIVN</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
             return (
-                <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in no-print">
-                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
+                <div className="flex h-screen bg-[#f1f5f9] text-slate-900 overflow-hidden animate-fade-in">
+                    {/* 사이드바 */}
+                    <aside className="w-72 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
                         <div className="p-6 bg-white"><KosviLogo /></div>
                         <div className="p-6">
                             <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700">
@@ -290,7 +132,8 @@
                             </div>
                         </div>
                         <nav className="flex-1 px-4 space-y-2">
-                            <button className="w-full flex items-center gap-4 px-6 py-4 bg-blue-600 rounded-2xl text-white font-bold shadow-lg"><Icon name="layout-dashboard" /> 통합 대시보드</button>
+                            <button className="w-full flex items-center gap-4 px-6 py-4 bg-blue-600 rounded-2xl text-white font-bold shadow-lg"><Icon name="layout-dashboard" /> 현황 / Dashboard</button>
+                            <button className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:bg-slate-800 rounded-2xl transition-all font-medium"><Icon name="calendar" /> 일정 / Lịch trình</button>
                         </nav>
                         <div className="p-6">
                             <button onClick={onLogout} className="w-full py-3 bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
@@ -299,234 +142,217 @@
                         </div>
                     </aside>
 
+                    {/* 메인 콘텐츠 */}
                     <main className="flex-1 overflow-y-auto flex flex-col">
                         <header className="glass-panel sticky top-0 px-8 py-5 flex justify-between items-center z-20 shadow-sm">
                             <h2 className="text-2xl font-black text-slate-800 tracking-tight">KOSVI Integrated Manager</h2>
                             <button className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-slate-800 transition-all">
-                                <Icon name="plus" size={16} /> 새 일정 (Tạo mới)
+                                <Icon name="plus" size={16} /> 새 견적 생성 (Tạo mới)
                             </button>
                         </header>
 
-                        <div className="p-6 w-full h-full flex flex-col lg:flex-row gap-6">
-                            <div className="lg:w-5/12 flex flex-col gap-6">
-                                <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex-1">
-                                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-700 flex justify-between items-center">
-                                        <span>예약 리스트 (Danh sách)</span>
-                                        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Total: {trips.length}</span>
-                                    </div>
-                                    <div className="overflow-y-auto h-[calc(100vh-250px)]">
+                        <div className="p-8 max-w-[1600px] mx-auto w-full">
+                            {/* 리스트 뷰 */}
+                            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                                <table className="w-full text-left font-bold">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                            <th className="px-8 py-5">고객명 (Khách hàng)</th>
+                                            <th className="px-8 py-5">일정 (Lịch trình)</th>
+                                            <th className="px-8 py-5 text-center">상태 (Trạng thái)</th>
+                                            {userRole === 'admin' && <th className="px-8 py-5 text-right">총 견적 (Tổng giá)</th>}
+                                            <th className="px-8 py-5 text-right">관리 (Quản lý)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
                                         {trips.map(trip => (
-                                            <div key={trip.id} onClick={() => setSelectedTrip({...trip})} className="p-6 border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors group">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h4 className="font-black text-lg text-slate-800 group-hover:text-blue-600 transition-colors">{trip.client}</h4>
-                                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold">{trip.status}</span>
-                                                </div>
-                                                <div className="text-sm text-slate-500 font-medium mb-3">
-                                                    {trip.title} <span className="text-slate-400">({trip.pax}명)</span>
-                                                </div>
-                                                <div className="flex gap-2 text-xs font-bold text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-3">
-                                                    <div className="flex items-center gap-1"><Icon name="plane-landing" size={14} /> {trip.flightInfo.in.flight} ({trip.flightInfo.in.arrTime})</div>
-                                                    <div className="w-px bg-slate-200 mx-1"></div>
-                                                    <div className="flex items-center gap-1"><Icon name="plane-takeoff" size={14} /> {trip.flightInfo.out.flight} ({trip.flightInfo.out.depTime})</div>
-                                                </div>
+                                            <tr key={trip.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-8 py-6 text-lg text-slate-800">{trip.client}</td>
+                                                <td className="px-8 py-6 text-slate-500 text-sm">{trip.title} <span className="text-blue-500 font-bold">({trip.pax}명)</span></td>
+                                                <td className="px-8 py-6 text-center"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">{trip.status}</span></td>
                                                 {userRole === 'admin' && (
-                                                    <div className="text-right font-black text-slate-800">
-                                                        {formatMoney(convertCurrency(calculateTotal(trip.items, 'price'), trip.exchangeRate, trip.targetCurrency), trip.targetCurrency)}
-                                                    </div>
+                                                    <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">
+                                                        {formatMoney(convertCurrency(calculateTotal(trip.items, 'priceVnd'), trip.exchangeRate, trip.targetCurrency), trip.targetCurrency)}
+                                                    </td>
                                                 )}
-                                            </div>
+                                                <td className="px-8 py-6 text-right">
+                                                    <button onClick={() => setSelectedTrip({...trip})} className="p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:text-blue-600 shadow-sm transition-all">
+                                                        <Icon name="edit-3" />
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="lg:w-7/12 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                                    <h3 className="font-black text-slate-700">2026년 1월 (Tháng 1)</h3>
-                                </div>
-                                <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50 font-bold text-xs text-center py-2 text-slate-400">
-                                    <div className="text-red-400">SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div className="text-blue-400">SAT</div>
-                                </div>
-                                <div className="grid grid-cols-7 flex-1 bg-white">
-                                    {calendarCells.map((day, idx) => {
-                                        if (!day) return <div key={idx} className="calendar-day bg-slate-50/30"></div>;
-                                        const dateStr = `2026-01-${String(day).padStart(2, '0')}`;
-                                        const dayTrips = trips.filter(t => t.startDate <= dateStr && t.endDate >= dateStr);
-                                        return (
-                                            <div key={idx} className="calendar-day p-2 relative hover:bg-slate-50 transition-colors">
-                                                <span className={`text-xs font-bold ${idx % 7 === 0 ? 'text-red-400' : idx % 7 === 6 ? 'text-blue-400' : 'text-slate-400'}`}>{day}</span>
-                                                <div className="mt-1 space-y-1">
-                                                    {dayTrips.map(t => (
-                                                        <div key={t.id} onClick={() => setSelectedTrip({...t})} className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-1 rounded font-bold truncate cursor-pointer hover:bg-blue-200" title={t.client}>{t.client}</div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </main>
 
+                    {/* 통합 워크시트 모달 (엑셀형) */}
                     {selectedTrip && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-fade-in no-print">
-                            <div className="bg-white w-full max-w-[1600px] h-[95vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
-                                <div className="px-8 py-6 bg-slate-900 text-white shrink-0">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-3xl font-black italic tracking-tighter">{selectedTrip.client} 통합 워크시트</h3>
-                                            <p className="text-slate-400 text-xs mt-1 font-medium">{selectedTrip.startDate} ~ {selectedTrip.endDate} (PAX: {selectedTrip.pax})</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {userRole === 'admin' && (
-                                                <button onClick={() => setShowCustomerQuote(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all">
-                                                    <Icon name="printer" size={16} /> 손님용 견적서 발행
-                                                </button>
-                                            )}
-                                            <button onClick={() => setSelectedTrip(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><Icon name="x" size={24} /></button>
-                                        </div>
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-6 animate-fade-in">
+                            <div className="bg-white w-full max-w-[1700px] h-[95vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
+                                {/* 모달 헤더: 환율 설정 및 요약 */}
+                                <div className="px-10 py-6 bg-slate-900 text-white flex justify-between items-center shrink-0">
+                                    <div>
+                                        <h3 className="text-2xl font-black italic">{selectedTrip.client} 통합 워크시트</h3>
+                                        <p className="text-slate-400 text-xs mt-1 font-medium">{selectedTrip.startDate} ~ {selectedTrip.endDate} (PAX: {selectedTrip.pax})</p>
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-4 bg-white/10 p-4 rounded-xl border border-white/10 mb-4">
-                                        <div className="flex items-center gap-4 border-r border-white/10 pr-4">
-                                            <div className="text-right w-24">
-                                                <span className="text-[10px] text-blue-300 font-bold block uppercase mb-1">Inbound (입국)</span>
-                                                <input className="bg-transparent text-lg font-black text-white w-full text-right outline-none border-b border-white/20 focus:border-blue-400" value={selectedTrip.flightInfo.in.flight} onChange={(e) => updateFlightInfo('in', 'flight', e.target.value)} />
-                                            </div>
-                                            <div className="text-xs font-medium text-slate-300 space-y-1 flex-1">
-                                                <div className="flex items-center gap-2"><span className="w-8">출발:</span> <input className="bg-transparent text-white w-16 outline-none border-b border-white/20" value={selectedTrip.flightInfo.in.depTime} onChange={(e) => updateFlightInfo('in', 'depTime', e.target.value)} /></div>
-                                                <div className="flex items-center gap-2"><span className="w-8">도착:</span> <input className="bg-transparent text-white font-bold w-16 outline-none border-b border-white/20" value={selectedTrip.flightInfo.in.arrTime} onChange={(e) => updateFlightInfo('in', 'arrTime', e.target.value)} /></div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right w-24">
-                                                <span className="text-[10px] text-orange-300 font-bold block uppercase mb-1">Outbound (출국)</span>
-                                                <input className="bg-transparent text-lg font-black text-white w-full text-right outline-none border-b border-white/20 focus:border-orange-400" value={selectedTrip.flightInfo.out.flight} onChange={(e) => updateFlightInfo('out', 'flight', e.target.value)} />
-                                            </div>
-                                            <div className="text-xs font-medium text-slate-300 space-y-1 flex-1">
-                                                <div className="flex items-center gap-2"><span className="w-8">출발:</span> <input className="bg-transparent text-white font-bold w-16 outline-none border-b border-white/20" value={selectedTrip.flightInfo.out.depTime} onChange={(e) => updateFlightInfo('out', 'depTime', e.target.value)} /></div>
-                                                <div className="flex items-center gap-2"><span className="w-8">도착:</span> <input className="bg-transparent text-white w-16 outline-none border-b border-white/20" value={selectedTrip.flightInfo.out.arrTime} onChange={(e) => updateFlightInfo('out', 'arrTime', e.target.value)} /></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
+                                    
                                     {userRole === 'admin' && (
-                                        <div className="flex items-center gap-4 justify-end text-xs">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-slate-400 font-bold uppercase">Rate:</span>
-                                                <input type="number" className="bg-white/10 border border-white/20 px-2 py-1 rounded text-right font-bold w-20 outline-none focus:bg-white/20" value={selectedTrip.exchangeRate} onChange={(e) => setSelectedTrip({...selectedTrip, exchangeRate: parseFloat(e.target.value)})} />
+                                        <div className="flex items-center gap-6 bg-white/10 px-6 py-3 rounded-2xl border border-white/10">
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] text-blue-300 font-bold uppercase">적용 환율 (Rate)</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="bg-transparent border-b border-blue-400 w-20 text-lg font-black outline-none focus:border-white transition-colors"
+                                                    value={selectedTrip.exchangeRate}
+                                                    onChange={(e) => {
+                                                        const newTrip = {...selectedTrip, exchangeRate: parseFloat(e.target.value)};
+                                                        setSelectedTrip(newTrip);
+                                                        // Note: In real app, also update 'trips' state
+                                                    }}
+                                                />
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-slate-400 font-bold uppercase">Currency:</span>
-                                                <select className="bg-slate-800 border border-slate-600 rounded px-2 py-1 outline-none" value={selectedTrip.targetCurrency} onChange={(e) => setSelectedTrip({...selectedTrip, targetCurrency: e.target.value})}>
-                                                    <option value="KRW">KRW</option>
-                                                    <option value="USD">USD</option>
-                                                    <option value="VND">VND</option>
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] text-blue-300 font-bold uppercase">견적 통화 (Tiền tệ)</label>
+                                                <select 
+                                                    className="bg-slate-800 border border-slate-600 rounded text-sm font-bold px-2 py-1 outline-none"
+                                                    value={selectedTrip.targetCurrency}
+                                                    onChange={(e) => setSelectedTrip({...selectedTrip, targetCurrency: e.target.value})}
+                                                >
+                                                    <option value="KRW">KRW (원)</option>
+                                                    <option value="USD">USD ($)</option>
+                                                    <option value="VND">VND (동)</option>
                                                 </select>
                                             </div>
-                                            <div className="pl-4 border-l border-white/20">
-                                                <span className="text-slate-400 font-bold mr-2">EST:</span>
-                                                <span className="text-xl font-black text-green-400">
-                                                    {formatMoney(convertCurrency(calculateTotal(selectedTrip.items, 'price'), selectedTrip.exchangeRate, selectedTrip.targetCurrency), selectedTrip.targetCurrency)}
-                                                </span>
+                                            <div className="text-right pl-6 border-l border-white/20">
+                                                <p className="text-[10px] text-slate-400 uppercase">Total Estimate</p>
+                                                <p className="text-2xl font-black text-green-400">
+                                                    {formatMoney(convertCurrency(calculateTotal(selectedTrip.items, 'priceVnd'), selectedTrip.exchangeRate, selectedTrip.targetCurrency), selectedTrip.targetCurrency)}
+                                                </p>
                                             </div>
                                         </div>
                                     )}
+                                    <button onClick={() => setSelectedTrip(null)} className="p-3 hover:bg-white/10 rounded-full transition-colors"><Icon name="x" size={24} /></button>
                                 </div>
 
-                                <div className="flex-1 flex overflow-hidden">
-                                    <div className="w-1/2 p-12 overflow-y-auto border-r-2 border-slate-100 bg-white">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] mb-12 flex items-center gap-2 italic">
-                                            <Icon name="map-pin" size={16} className="text-blue-600" /> 01. TRAVEL ITINERARY (EDIT)
-                                        </h4>
-                                        <div className="space-y-12">
-                                            {selectedTrip.itinerary.map((day, idx) => (
-                                                <div key={idx} className="flex gap-8 group">
-                                                    <div className="w-14 h-14 rounded-[1.8rem] bg-slate-900 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xl">D-{day.day}</div>
-                                                    <div className="flex-1 space-y-4">
-                                                        <input className="w-full bg-transparent border-b border-dashed border-slate-200 font-black text-2xl italic outline-none pb-2 text-slate-800" value={day.title} onChange={(e) => {
-                                                            const newItin = [...selectedTrip.itinerary]; newItin[idx].title = e.target.value; setSelectedTrip({...selectedTrip, itinerary: newItin});
-                                                        }} />
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {day.activities.map((act, i) => (
-                                                                <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                                                    <div className="flex items-center gap-2 w-full">
-                                                                        <input className="bg-transparent w-16 text-right font-black text-blue-600 outline-none" placeholder="00:00" value={act.time} onChange={(e) => {
-                                                                            const newItin = [...selectedTrip.itinerary]; newItin[idx].activities[i].time = e.target.value; setSelectedTrip({...selectedTrip, itinerary: newItin});
-                                                                        }} />
-                                                                        <div className="w-px h-4 bg-slate-300 mx-2"></div>
-                                                                        <input className="bg-transparent w-full outline-none" value={act.content} onChange={(e) => {
-                                                                            const newItin = [...selectedTrip.itinerary]; newItin[idx].activities[i].content = e.target.value; setSelectedTrip({...selectedTrip, itinerary: newItin});
-                                                                        }} />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                            <button onClick={() => {
-                                                                const newItin = [...selectedTrip.itinerary];
-                                                                newItin[idx].activities.push({ time: '', content: '' });
-                                                                setSelectedTrip({...selectedTrip, itinerary: newItin});
-                                                            }} className="text-[10px] font-black text-blue-500 uppercase mt-2 flex items-center gap-1 hover:underline"><Icon name="plus" size={12} /> Add Activity</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                {/* 메인 엑셀 시트 영역 */}
+                                <div className="flex-1 overflow-auto bg-white p-8">
+                                    <table className="w-full text-sm border-collapse">
+                                        <thead className="sticky-header text-xs text-slate-500 uppercase tracking-wider font-bold">
+                                            <tr>
+                                                <th className="p-3 text-left w-28">날짜<br/><span className="text-[10px]">Ngày</span></th>
+                                                <th className="p-3 text-center w-20">시간<br/><span className="text-[10px]">Giờ</span></th>
+                                                <th className="p-3 w-24">분류<br/><span className="text-[10px]">Loại</span></th>
+                                                <th className="p-3 w-[25%]">일정 및 내용<br/><span className="text-[10px]">Nội dung</span></th>
+                                                <th className="p-3 text-center w-16">수량<br/><span className="text-[10px]">SL</span></th>
+                                                <th className="p-3 text-center w-16">단위<br/><span className="text-[10px]">ĐV</span></th>
+                                                
+                                                {/* 관리자 전용: 원가/매출 입력 */}
+                                                {userRole === 'admin' ? (
+                                                    <>
+                                                        <th className="p-3 text-right bg-red-50/50 w-32">원가 (Cost)<br/><span className="text-[10px]">VND</span></th>
+                                                        <th className="p-3 text-right bg-blue-50/50 w-32">매출 (Price)<br/><span className="text-[10px]">VND</span></th>
+                                                        <th className="p-3 text-right w-20">마진<br/><span className="text-[10px]">Lãi</span></th>
+                                                    </>
+                                                ) : null}
 
-                                    <div className="w-1/2 p-12 overflow-y-auto bg-slate-50/50">
-                                        {userRole === 'admin' ? (
-                                            <div className="space-y-10 animate-fade-in">
-                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-2 italic"><Icon name="calculator" size={16} className="text-green-600" /> 02. EXCEL QUOTATION (INPUT VND)</h4>
-                                                <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative border border-slate-800 overflow-hidden">
-                                                    <table className="w-full text-[11px] font-bold relative z-10">
-                                                        <thead>
-                                                            <tr className="text-slate-500 border-b border-slate-800 uppercase tracking-widest italic">
-                                                                <th className="py-5 text-left w-[40%]">Description</th>
-                                                                <th className="py-5 text-center">Qty</th>
-                                                                <th className="py-5 text-right">Cost (VND)</th>
-                                                                <th className="py-5 text-right text-blue-400">Price (VND)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-800 font-black">
-                                                            {selectedTrip.items.map((item, i) => (
-                                                                <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                                                    <td className="py-6"><input className="excel-input text-white italic" value={item.name} onChange={(e) => {
-                                                                        const newItems = [...selectedTrip.items]; newItems[i].name = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
-                                                                    }} /></td>
-                                                                    <td className="py-6 text-center"><input type="number" className="excel-input text-center text-white" value={item.qty} onChange={(e) => {
-                                                                        const newItems = [...selectedTrip.items]; newItems[i].qty = parseInt(e.target.value || 0); setSelectedTrip({...selectedTrip, items: newItems});
-                                                                    }} /></td>
-                                                                    <td className="py-6 text-right"><input type="number" className="excel-input text-right text-slate-400" value={item.cost} onChange={(e) => {
-                                                                        const newItems = [...selectedTrip.items]; newItems[i].cost = parseInt(e.target.value || 0); setSelectedTrip({...selectedTrip, items: newItems});
-                                                                    }} /></td>
-                                                                    <td className="py-6 text-right text-blue-400"><input type="number" className="excel-input text-right text-blue-400" value={item.price} onChange={(e) => {
-                                                                        const newItems = [...selectedTrip.items]; newItems[i].price = parseInt(e.target.value || 0); setSelectedTrip({...selectedTrip, items: newItems});
-                                                                    }} /></td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="p-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 text-center flex flex-col items-center shadow-inner">
-                                                <Icon name="shield-off" size={64} className="text-slate-100 mb-8" />
-                                                <h5 className="text-xl font-black text-slate-300 tracking-widest uppercase italic leading-loose">Quotation Locked<br/>CEO Authorized Only</h5>
-                                            </div>
+                                                <th className="p-3 text-center w-24">예약<br/><span className="text-[10px]">Booking</span></th>
+                                                <th className="p-3 text-left">비고 / 메모<br/><span className="text-[10px]">Ghi chú</span></th>
+                                                <th className="p-3 text-center w-12"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="font-medium text-slate-700">
+                                            {selectedTrip.items.map((item, idx) => (
+                                                <tr key={item.id} className="group hover:bg-slate-50 border-b border-slate-100">
+                                                    <td className="p-2">
+                                                        <input className="excel-input font-bold text-slate-800" value={item.date} onChange={(e)=>{
+                                                            const newItems = [...selectedTrip.items]; newItems[idx].date = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                        }} />
+                                                        <div className="text-[10px] text-slate-400 pl-2">{getDayOfWeek(item.date)}</div>
+                                                    </td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input text-center text-blue-600 font-bold" value={item.time} placeholder="00:00" onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].time = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+
+                                                    <td className="p-2"><input className="excel-input text-center text-slate-500 text-xs" value={item.category} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].category = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input font-bold text-slate-800" value={item.content} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].content = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input type="number" className="excel-input text-center" value={item.qty} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].qty = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+                                                    
+                                                    <td className="p-2"><input className="excel-input text-center text-slate-400" value={item.unit} onChange={(e)=>{
+                                                        const newItems = [...selectedTrip.items]; newItems[idx].unit = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                    }} /></td>
+
+                                                    {userRole === 'admin' ? (
+                                                        <>
+                                                            <td className="p-2 bg-red-50/30"><input type="number" className="excel-input text-right text-red-400 font-bold" value={item.costVnd} onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].costVnd = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }} /></td>
+                                                            <td className="p-2 bg-blue-50/30"><input type="number" className="excel-input text-right text-blue-600 font-black" value={item.priceVnd} onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].priceVnd = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }} /></td>
+                                                            <td className="p-3 text-right text-xs font-bold text-slate-400">
+                                                                {item.priceVnd > 0 ? Math.round(((item.priceVnd - item.costVnd)/item.priceVnd)*100) + '%' : '-'}
+                                                            </td>
+                                                        </>
+                                                    ) : null}
+
+                                                    <td className="p-2 text-center">
+                                                        <select 
+                                                            className={`text-xs font-bold px-2 py-1 rounded border outline-none cursor-pointer w-full text-center ${item.booking === '확정' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`}
+                                                            value={item.booking}
+                                                            onChange={(e)=>{
+                                                                const newItems = [...selectedTrip.items]; newItems[idx].booking = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                            }}
+                                                        >
+                                                            <option value="미정">미정 (Chưa)</option>
+                                                            <option value="대기">대기 (Chờ)</option>
+                                                            <option value="확정">확정 (OK)</option>
+                                                        </select>
+                                                    </td>
+
+                                                    <td className="p-2 flex items-center gap-2">
+                                                        <input className="excel-input text-xs text-slate-500" value={item.note} placeholder="메모 (Ghi chú)..." onChange={(e)=>{
+                                                            const newItems = [...selectedTrip.items]; newItems[idx].note = e.target.value; setSelectedTrip({...selectedTrip, items: newItems});
+                                                        }} />
+                                                    </td>
+
+                                                    <td className="p-2 text-center">
+                                                        {userRole === 'admin' && <button onClick={()=>{
+                                                            const newItems = selectedTrip.items.filter(i => i.id !== item.id);
+                                                            setSelectedTrip({...selectedTrip, items: newItems});
+                                                        }} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16} /></button>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        {userRole === 'admin' && (
+                                            <tfoot>
+                                                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                                                    <td colSpan="3" className="p-4 text-center">
+                                                        <button onClick={()=>{
+                                                            const newId = Date.now();
+                                                            setSelectedTrip({...selectedTrip, items: [...selectedTrip.items, { id: newId, date: selectedTrip.startDate, time: '', category: '', content: '', qty: 1, unit: '', costVnd: 0, priceVnd: 0, booking: '미정', note: '' }]});
+                                                        }} className="text-xs font-bold bg-white border border-slate-300 px-4 py-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm flex items-center gap-2 mx-auto"><Icon name="plus" size={14} /> 행 추가 (Thêm dòng)</button>
+                                                    </td>
+                                                    <td colSpan="3" className="p-4 text-right font-black text-slate-500 uppercase text-xs tracking-widest">TOTAL (VND)</td>
+                                                    <td className="p-4 text-right font-bold text-slate-400">{formatMoney(calculateTotal(selectedTrip.items, 'costVnd'), 'VND')}</td>
+                                                    <td className="p-4 text-right font-black text-blue-600 text-lg">{formatMoney(calculateTotal(selectedTrip.items, 'priceVnd'), 'VND')}</td>
+                                                    <td colSpan="4"></td>
+                                                </tr>
+                                            </tfoot>
                                         )}
-                                        <div className="mt-12 p-10 bg-blue-50/50 border border-blue-100 rounded-[3rem] space-y-8 shadow-sm">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] flex items-center gap-2 italic"><Icon name="cloud-lightning" size={18} /> Staff Operational Hub</h4>
-                                                <select className="bg-white border border-blue-200 px-5 py-2.5 rounded-2xl text-[10px] font-black text-blue-600 outline-none shadow-sm cursor-pointer" defaultValue={selectedTrip.bookingStatus} onChange={(e) => setSelectedTrip({...selectedTrip, bookingStatus: e.target.value})}>
-                                                    <option value="대기">대기 (PENDING)</option>
-                                                    <option value="확정">확정 (CONFIRMED)</option>
-                                                </select>
-                                            </div>
-                                            <textarea className="w-full bg-white border border-slate-200 rounded-[2.5rem] p-8 text-sm font-bold outline-none h-44 shadow-inner focus:ring-8 focus:ring-blue-500/5 transition-all" placeholder="직원 메모 및 특이사항 입력..." defaultValue={selectedTrip.staffNote} onChange={(e) => setSelectedTrip({...selectedTrip, staffNote: e.target.value})}></textarea>
-                                            <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black text-xl shadow-2xl active:scale-95 transition-all uppercase tracking-[0.2em] italic">Commit All Updates</button>
-                                        </div>
-                                    </div>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -551,17 +377,17 @@
                 if (id === 'admin' && pw === '1234') onLogin('admin');
                 else if (id === 'staff1' && pw === '1111') onLogin('staff1');
                 else if (id === 'staff2' && pw === '2222') onLogin('staff2');
-                else setError('ID/PW Error');
+                else setError('ID hoặc Mật khẩu không đúng (정보 불일치)');
             };
             return (
                 <div className="min-h-screen flex items-center justify-center bg-[#f1f5f9] p-6">
                     <div className="bg-white p-16 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-200">
                         <div className="flex justify-center mb-10"><KosviLogo /></div>
                         <form onSubmit={handleLogin} className="space-y-6">
-                            <input type="text" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-bold text-center" placeholder="ID" value={id} onChange={(e) => setId(e.target.value)} />
+                            <input type="text" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-bold text-center" placeholder="ID (admin / staff1 / staff2)" value={id} onChange={(e) => setId(e.target.value)} />
                             <input type="password" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-bold text-center" placeholder="PASSWORD" value={pw} onChange={(e) => setPw(e.target.value)} />
                             {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
-                            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black shadow-xl hover:bg-blue-700 transition-all">LOGIN</button>
+                            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest">Đăng nhập (Login)</button>
                         </form>
                     </div>
                 </div>
