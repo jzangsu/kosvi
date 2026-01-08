@@ -11,6 +11,7 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI }}
+          # 금고(Secrets)에 등록된 이름과 똑같이 _TRAVEL을 붙였습니다.
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI_TRAVEL }}
           channelId: live
           projectId: kosvi-travel
