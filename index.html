@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOSVI Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden h-screen font-sans">
+
+    <!-- 1. 로그인/외부 접속 페이지 (초기 화면) -->
+    <div id="login-view" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1E3A8A] to-[#111827] relative overflow-hidden">
+        <!-- 배경 장식 요소 -->
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+            <div class="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay"></div>
+            <div class="absolute bottom-10 right-10 w-96 h-96 bg-orange-500 rounded-full blur-3xl mix-blend-overlay"></div>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-up relative z-10">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-[#F97316] rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4 transform rotate-3">
+                    <span class="text-3xl font-black italic text-white">K</span>
+                </div>
+                <h1 class="text-2xl font-black text-white tracking-tight">KOSVI ERP</h1>
+                <p class="text-blue-200 text-sm mt-1 font-medium tracking-wider">여행사 통합 관리 시스템</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <!-- 권한 선택 (테스트용) -->
+                <div class="bg-slate-900/50 p-1 rounded-xl flex mb-4 border border-white/10">
+                    <button type="button" onclick="selectRole('admin')" id="role-admin" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#F97316] text-white shadow-md">
+                        관리자 (Admin)
+                    </button>
+                    <button type="button" onclick="selectRole('staff')" id="role-staff" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+                        직원 (Staff)
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-200 uppercase mb-1.5 ml-1">ID (Email)</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input type="email" id="input-email" value="admin@daewoongvina.com" class="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-all" placeholder="이메일 주소 입력">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-200 uppercase mb-1.5 ml-1">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input type="password" value="password123" class="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F97316] transition-all" placeholder="비밀번호 입력">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3.5 bg-[#F97316] hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-900/30 transition-all transform active:scale-95 mt-6 flex items-center justify-center gap-2">
+                    <span>시스템 접속</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+            
+            <div class="mt-6 pt-6 border-t border-white/10 flex justify-center">
+                <a href="https://kosvi-travel.web.app/" target="_blank" class="text-xs text-blue-300 hover:text-white flex items-center gap-1 transition-colors">
+                    <i data-lucide="globe" class="w-3 h-3"></i> KOSVI 홈페이지로 이동
+                </a>
+            </div>
+
+            <p class="text-center text-[10px] text-blue-300/50 mt-4">
+                Authorized Personnel Only | KOSVI Vietnam
+            </p>
+        </div>
+    </div>
+
+    <!-- 2. 메인 대시보드 (로그인 후 보임) -->
+    <div id="main-view" class="hidden w-full h-full flex animate-fade-in">
+        <!-- 사이드바 -->
+        <nav class="w-64 bg-[#1E3A8A] text-white flex flex-col shadow-2xl flex-shrink-0">
+            <div class="p-6 flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#F97316] rounded flex items-center justify-center shadow-lg">
+                    <span class="text-xl font-black italic">K</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight leading-none">KOSVI</h1>
+                    <p class="text-[10px] text-orange-400 font-bold tracking-widest mt-1">TRAVEL</p>
+                </div>
+            </div>
+
+            <div class="flex-1 px-4 py-4 space-y-1">
+                <!-- 대시보드 메뉴: 관리자에게만 보임 -->
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-white/10 font-bold">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span>대시보드</span>
+                </button>
+                <button onclick="switchTab('bookings')" id="btn-bookings" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 text-slate-300">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i> <span>예약 현황</span>
+                </button>
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-white/5">
+                    <i data-lucide="users" class="w-5 h-5"></i> <span>고객 명단</span>
+                </button>
+            </div>
+
+            <div class="p-6 border-t border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-xs font-bold border border-white/20" id="user-avatar">허</div>
+                    <div class="text-xs">
+                        <p class="font-bold" id="user-name">허창수 법인장</p>
+                        <p class="opacity-60 text-[10px]" id="user-role">Master Admin</p>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="mt-3 w-full py-2 border border-white/20 rounded-lg text-[10px] text-blue-200 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-center gap-1">
+                    <i data-lucide="log-out" class="w-3 h-3"></i> 로그아웃
+                </button>
+            </div>
+        </nav>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+            <!-- 헤더 -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-[#F97316]"></i>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Vietnam Head Office</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:block text-right">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Today</p>
+                        <p class="text-xs font-bold mt-1">2026. 01. 08</p>
+                    </div>
+                    <button class="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-500 relative hover:bg-slate-100 transition-colors">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 뷰포트 (내용이 바뀌는 영역) -->
+            <div class="flex-1 overflow-y-auto p-8" id="content-area">
+                <!-- 자바스크립트로 내용이 주입됩니다 -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Global State ---
+        let currentRole = 'admin'; // 'admin' or 'staff'
+        let currentTab = 'dashboard';
+        let currentSearch = '';
+
+        // --- Mock Data (VND 단위로 변경됨) ---
+        // 환율 가정: 1 KRW ≈ 20 VND (편의상 계산)
+        const bookings = [
+            { id: 'BK001', customer: '김철수', tour: '다낭 3박 4일 패키지', date: '2026-02-15', price: 25000000, status: 'Confirmed', payment: 'Paid' },
+            { id: 'BK002', customer: '이영희', tour: '나트랑 골프 투어', date: '2026-03-01', price: 42000000, status: 'Pending', payment: 'Partial' },
+            { id: 'BK003', customer: '박지민', tour: '하노이 비즈니스 투어', date: '2026-02-10', price: 17000000, status: 'Confirmed', payment: 'Unpaid' },
+            { id: 'BK004', customer: '최유진', tour: '호치민 시티 투어', date: '2026-01-25', price: 9000000, status: 'Completed', payment: 'Paid' },
+        ];
+
+        // --- Helper Functions ---
+        const formatVND = (price) => price.toLocaleString() + ' ₫';
+
+        function selectRole(role) {
+            currentRole = role;
+            const adminBtn = document.getElementById('role-admin');
+            const staffBtn = document.getElementById('role-staff');
+            const emailInput = document.getElementById('input-email');
+            
+            if (role === 'admin') {
+                adminBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#F97316] text-white shadow-md";
+                staffBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+                emailInput.value = "admin@daewoongvina.com";
+            } else {
+                adminBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+                staffBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#F97316] text-white shadow-md";
+                emailInput.value = "staff@kosvi.com";
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const loginView = document.getElementById('login-view');
+            const mainView = document.getElementById('main-view');
+            
+            // 로그인 화면 숨기고 메인 화면 표시
+            loginView.classList.add('hidden');
+            mainView.classList.remove('hidden');
+            mainView.classList.add('flex');
+
+            // 권한별 UI 설정
+            if (currentRole === 'admin') {
+                const dashboardBtn = document.getElementById('btn-dashboard');
+                if (dashboardBtn) dashboardBtn.classList.remove('hidden');
+                document.getElementById('user-name').innerText = "허창수 법인장";
+                document.getElementById('user-role').innerText = "Master Admin";
+                document.getElementById('user-avatar').innerText = "허";
+                switchTab('dashboard');
+            } else {
+                const dashboardBtn = document.getElementById('btn-dashboard');
+                if (dashboardBtn) dashboardBtn.classList.add('hidden'); // 대시보드 메뉴 숨김
+                document.getElementById('user-name').innerText = "김직원 매니저";
+                document.getElementById('user-role').innerText = "Staff";
+                document.getElementById('user-avatar').innerText = "김";
+                switchTab('bookings'); // 바로 예약 현황으로 이동
+            }
+            
+            lucide.createIcons();
+        }
+
+        function handleLogout() {
+            if(confirm('로그아웃 하시겠습니까?')) {
+                window.location.reload();
+            }
+        }
+
+        function renderStatCard(icon, iconClass, title, value, badge, badgeClass) {
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 ${iconClass} rounded-xl"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+                        <span class="${badgeClass} text-xs font-bold px-2 py-1 rounded-md">${badge}</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] font-bold uppercase mb-1 tracking-wider">${title}</p>
+                    <h3 class="text-2xl font-bold">${value}</h3>
+                </div>
+            `;
+        }
+
+        function getStatusClass(status) {
+            if (status === 'Confirmed') return 'bg-blue-100 text-blue-700';
+            if (status === 'Completed') return 'bg-green-100 text-green-700';
+            return 'bg-yellow-100 text-yellow-700';
+        }
+
+        // --- Render Views ---
+        function renderDashboard() {
+            // 직원 접근 제어 (혹시 모를 우회 접근 방지)
+            if (currentRole === 'staff') {
+                return `<div class="p-8 flex flex-col items-center justify-center h-full text-slate-400">
+                    <i data-lucide="shield-alert" class="w-16 h-16 mb-4 text-slate-300"></i>
+                    <h3 class="text-lg font-bold text-slate-600">접근 권한이 없습니다</h3>
+                    <p class="text-sm">관리자만 대시보드를 조회할 수 있습니다.</p>
+                </div>`;
+            }
+
+            return `
+                <div class="space-y-8 max-w-7xl animate-fade-in">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">대시보드</h2>
+                            <p class="text-slate-500 text-sm">KOSVI 여행사 실시간 운영 요약 (Admin Only)</p>
+                        </div>
+                        <button onclick="alert('신규 예약 등록 기능은 준비 중입니다.')" class="bg-[#F97316] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-orange-600 transition-all flex items-center gap-2 active:scale-95">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 신규 예약 등록
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${renderStatCard('credit-card', 'bg-blue-50 text-blue-700', '총 매출', '93,000,000 ₫', '+12%', 'text-green-600 bg-green-50')}
+                        ${renderStatCard('calendar-days', 'bg-orange-50 text-orange-600', '진행 중인 예약', '12건', '+5%', 'text-green-600 bg-green-50')}
+                        ${renderStatCard('users', 'bg-indigo-50 text-indigo-700', '전체 고객 수', '48명', 'New', 'text-slate-400 bg-slate-50')}
+                        ${renderStatCard('check-circle-2', 'bg-emerald-50 text-emerald-700', '투어 완료율', '94%', 'Excellent', 'text-emerald-600 bg-emerald-50')}
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+                                <h3 class="font-bold text-slate-800">최근 예약 내역</h3>
+                                <button onclick="switchTab('bookings')" class="text-xs font-bold text-blue-800 hover:text-orange-600 flex items-center gap-1 transition-colors">
+                                    전체보기 <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-4">고객</th>
+                                            <th class="px-6 py-4">투어 상품</th>
+                                            <th class="px-6 py-4">상태</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50 text-sm">
+                                        ${bookings.slice(0, 4).map(item => `
+                                            <tr class="hover:bg-slate-50 transition-colors group">
+                                                <td class="px-6 py-4">
+                                                    <p class="font-bold group-hover:text-blue-800">${item.customer}</p>
+                                                    <p class="text-[10px] text-slate-400">${item.id}</p>
+                                                </td>
+                                                <td class="px-6 py-4 text-slate-600">${item.tour}</td>
+                                                <td class="px-6 py-4">
+                                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${getStatusClass(item.status)}">${item.status}</span>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="bg-[#1E3A8A] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-4 opacity-10">
+                                    <i data-lucide="bell" class="w-20 h-20"></i>
+                                </div>
+                                <h4 class="font-bold mb-3 flex items-center gap-2 text-orange-400">
+                                    <i data-lucide="bell" class="w-4 h-4"></i> 실시간 알림
+                                </h4>
+                                <p class="text-xs text-blue-100 leading-relaxed mb-6">
+                                    베트남 설 연휴(Tet) 관련 항공권 예약이 마감 임박입니다. 잔여 좌석을 확인해 주세요.
+                                </p>
+                                <button class="w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold border border-white/20 transition-all backdrop-blur-sm">
+                                    상세 공지 보기
+                                </button>
+                            </div>
+                            
+                            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                <h4 class="font-bold text-slate-800 mb-4 text-sm">업무 퀵 링크</h4>
+                                <div class="space-y-2">
+                                    <button class="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-slate-100">
+                                        항공권 견적 발행
+                                    </button>
+                                    <button class="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-slate-100">
+                                        비자 접수 현황
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBookings(searchTerm = '') {
+            const filtered = bookings.filter(b => 
+                b.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                b.tour.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return `
+                <div class="space-y-6 max-w-7xl animate-fade-in">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">예약 통합 관리</h2>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+                            <input 
+                                type="text" 
+                                placeholder="고객명 또는 투어명 검색..."
+                                class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm w-full sm:w-80 focus:ring-2 focus:ring-[#1E3A8A] focus:outline-none transition-all"
+                                value="${searchTerm}"
+                                oninput="updateSearch(this.value)"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-6 py-5">No.</th>
+                                        <th class="px-6 py-5">고객명</th>
+                                        <th class="px-6 py-5">투어 정보</th>
+                                        <th class="px-6 py-5">출발 날짜</th>
+                                        <th class="px-6 py-5">금액 (VND)</th>
+                                        <th class="px-6 py-5">결제 상태</th>
+                                        <th class="px-6 py-5 text-center">작업</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-50 text-sm">
+                                    ${filtered.map(item => `
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 font-bold text-blue-900">${item.id}</td>
+                                            <td class="px-6 py-4 font-medium">${item.customer}</td>
+                                            <td class="px-6 py-4 text-slate-600">${item.tour}</td>
+                                            <td class="px-6 py-4 text-slate-500 font-medium">${item.date}</td>
+                                            <td class="px-6 py-4 font-bold text-slate-900">${formatVND(item.price)}</td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-1.5 text-xs font-bold ${item.payment === 'Paid' ? 'text-green-600' : 'text-orange-500'}">
+                                                    <i data-lucide="${item.payment === 'Paid' ? 'check-circle-2' : 'alert-circle'}" class="w-3.5 h-3.5"></i>
+                                                    ${item.payment}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <button class="text-slate-300 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100">
+                                                    <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Core Logic ---
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 탭 스타일 업데이트 (존재하는 경우에만)
+            const dashboardBtn = document.getElementById('btn-dashboard');
+            const bookingsBtn = document.getElementById('btn-bookings');
+            
+            if (dashboardBtn) {
+                dashboardBtn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === 'dashboard' ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
+            }
+            if (bookingsBtn) {
+                bookingsBtn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === 'bookings' ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
+            }
+
+            // 콘텐츠 렌더링
+            const contentArea = document.getElementById('content-area');
+            if (tab === 'dashboard') {
+                contentArea.innerHTML = renderDashboard();
+            } else {
+                contentArea.innerHTML = renderBookings(currentSearch);
+            }
+            
+            // 아이콘 새로고침
+            lucide.createIcons();
+        }
+
+        function updateSearch(val) {
+            currentSearch = val;
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = renderBookings(val);
+            lucide.createIcons();
+            
+            // 입력 포커스 유지
+            const input = document.querySelector('input');
+            if(input) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        }
+
+        // 초기 실행: 아이콘 로드
+        lucide.createIcons();
+        
+        // 초기 탭 설정은 로그인 함수에서 처리됨
+
+    </script>
+</body>
+</html>
