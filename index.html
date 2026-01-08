@@ -570,4 +570,92 @@
                                                 <tr key={item.id} className="group hover:bg-slate-50 border-b border-slate-100">
                                                     <td className="p-2"><input className="excel-input" value={item.date} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].date = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
                                                     <td className="p-2"><input className="excel-input text-center text-blue-600" value={item.time} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].time = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
-                                                    <td className="p-2">
+                                                    <td className="p-2"><input className="excel-input text-center text-slate-500" value={item.category} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].category = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
+                                                    <td className="p-2"><input className="excel-input" value={item.content} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].content = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
+                                                    <td className="p-2"><input type="number" className="excel-input text-center" value={item.qty} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].qty = Number(e.target.value); setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
+                                                    <td className="p-2"><input className="excel-input text-center" value={item.unit} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].unit = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
+                                                    
+                                                    {userRole === 'admin' && (
+                                                        <>
+                                                            <td className="p-2 bg-red-50/30">
+                                                                <NumberInput className="excel-input text-right text-red-500" value={item.costVnd} onChange={(val)=>{ const newItems = [...selectedTrip.items]; newItems[idx].costVnd = val; setSelectedTrip({...selectedTrip, items: newItems}); }} />
+                                                            </td>
+                                                            <td className="p-2 bg-blue-50/30">
+                                                                <NumberInput className="excel-input text-right text-blue-600" value={item.priceVnd} onChange={(val)=>{ const newItems = [...selectedTrip.items]; newItems[idx].priceVnd = val; setSelectedTrip({...selectedTrip, items: newItems}); }} />
+                                                            </td>
+                                                        </>
+                                                    )}
+
+                                                    <td className="p-2 text-center">
+                                                        <select className="text-[10px] font-black px-2 py-1 rounded border outline-none" value={item.booking} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].booking = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }}>
+                                                            <option>미정</option><option>대기</option><option>확정</option>
+                                                        </select>
+                                                    </td>
+                                                    
+                                                    <td className="p-2 text-center">
+                                                        <select className={`text-[10px] font-black px-2 py-1 rounded border outline-none ${item.supplierStatus === '지급완료' ? 'bg-blue-100 text-blue-700' : 'bg-red-50 text-red-600'}`} value={item.supplierStatus} onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].supplierStatus = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }}>
+                                                            <option>미지급</option><option>지급완료</option>
+                                                        </select>
+                                                    </td>
+
+                                                    <td className="p-2 flex justify-center gap-2">
+                                                        <label className={`cursor-pointer p-1.5 rounded hover:bg-slate-200 ${item.bookingFile ? 'text-green-500' : 'text-slate-300'}`} title="예약 확정서 업로드">
+                                                            <Icon name="file-check" size={16} />
+                                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(item.id, 'bookingFile', e.target.files[0])} />
+                                                        </label>
+                                                        {item.bookingFile && <button onClick={() => setPreviewFile(item.bookingFile)} className="text-xs text-blue-500 underline">보기</button>}
+                                                        <div className="w-px bg-slate-300 mx-1"></div>
+                                                        <label className={`cursor-pointer p-1.5 rounded hover:bg-slate-200 ${item.paymentFile ? 'text-blue-500' : 'text-slate-300'}`} title="송금 확인증 업로드">
+                                                            <Icon name="credit-card" size={16} />
+                                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(item.id, 'paymentFile', e.target.files[0])} />
+                                                        </label>
+                                                        {item.paymentFile && <button onClick={() => setPreviewFile(item.paymentFile)} className="text-xs text-blue-500 underline">보기</button>}
+                                                    </td>
+
+                                                    <td className="p-2"><input className="excel-input text-xs text-slate-500" value={item.note} placeholder="메모..." onChange={(e)=>{ const newItems = [...selectedTrip.items]; newItems[idx].note = e.target.value; setSelectedTrip({...selectedTrip, items: newItems}); }} /></td>
+                                                    <td className="p-2 text-center">{userRole === 'admin' && <button onClick={()=>{ const newItems = selectedTrip.items.filter(i => i.id !== item.id); setSelectedTrip({...selectedTrip, items: newItems}); }} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16} /></button>}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        {userRole === 'admin' && (
+                                            <tfoot>
+                                                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                                                    <td colSpan="3" className="p-4 text-center">
+                                                        <button onClick={()=>{ const newId=Date.now(); setSelectedTrip({...selectedTrip, items: [...selectedTrip.items, {id:newId, date: selectedTrip.startDate, time:'', category:'', content:'', qty:1, unit:'', costVnd:0, priceVnd:0, booking:'미정', supplierStatus:'미지급', note:'', bookingFile:null, paymentFile:null}]}); }} className="text-xs font-bold bg-white border border-slate-300 px-4 py-2 rounded-lg hover:bg-blue-50 flex items-center gap-2 mx-auto"><Icon name="plus" /> 행 추가</button>
+                                                    </td>
+                                                    <td colSpan="3" className="p-4 text-right font-black text-slate-500 uppercase text-xs tracking-widest">TOTAL (VND)</td>
+                                                    <td className="p-4 text-right font-bold text-slate-400">{formatMoney(calculateTotal(selectedTrip.items, 'costVnd'), 'VND')}</td>
+                                                    <td className="p-4 text-right font-black text-blue-600 text-lg">{formatMoney(calculateTotal(selectedTrip.items, 'priceVnd'), 'VND')}</td>
+                                                    <td colSpan="5"></td>
+                                                </tr>
+                                            </tfoot>
+                                        )}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {previewFile && <FilePreview file={previewFile} onClose={() => setPreviewFile(null)} />}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [authState, setAuthState] = useState({ isLoggedIn: false, role: null });
+            const login = (role) => setAuthState({ isLoggedIn: true, role });
+            const logout = () => setAuthState({ isLoggedIn: false, role: null });
+            return authState.isLoggedIn ? <MainApp userRole={authState.role} onLogout={logout} /> : <LoginPage onLogin={login} />;
+        };
+
+        const LoginPage = ({ onLogin }) => {
+            const [id, setId] = useState(''); const [pw, setPw] = useState(''); const [error, setError] = useState('');
+            const handleLogin = (e) => { e.preventDefault(); if(id==='admin'&&pw==='1234') onLogin('admin'); else if(id==='staff1'&&pw==='1111') onLogin('staff1'); else if(id==='staff2'&&pw==='2222') onLogin('staff2'); else setError('Login Failed'); };
+            return <div className="min-h-screen flex items-center justify-center bg-[#f1f5f9]"><div className="bg-white p-12 rounded-3xl shadow-xl w-96"><KosviLogo /><form onSubmit={handleLogin} className="space-y-4 mt-8"><input className="w-full p-4 bg-slate-50 rounded-xl" placeholder="ID" value={id} onChange={e=>setId(e.target.value)} /><input type="password" className="w-full p-4 bg-slate-50 rounded-xl" placeholder="PW" value={pw} onChange={e=>setPw(e.target.value)} /><button className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold">LOGIN</button></form></div></div>;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
