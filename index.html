@@ -63,6 +63,7 @@
          * 2. 계정: admin(1234), staff1(1111), staff2(2222)
          * 3. 핵심: 일정+견적(원가/매출) 한 줄 통합, 변동 환율, 한-베 병기
          * 4. 기능: 손님용 견적서 출력 (항공정보 포함, 총액 표시)
+         * 5. 업데이트: 리스트에 항공 입/출국 시간 기본 표시
          */
 
         const { useState, useEffect, useMemo } = React;
@@ -112,7 +113,7 @@
                 items: [
                     { id: 1, date: '2026-01-13', time: '12:40', category: '차량', content: '공항 픽업 및 미팅 (S2)', qty: 1, unit: '회', costVnd: 500000, priceVnd: 800000, booking: '확정', note: '기사 배정 완료' },
                     { id: 2, date: '2026-01-13', time: '15:00', category: '호텔', content: '호텔 체크인 (랜드마크)', qty: 3, unit: '박', costVnd: 3650000, priceVnd: 4500000, booking: '대기', note: '바우처 대기중' },
-                    { id: 3, date: '2026-01-14', time: '08:30', category: '골프', content: '트윈도브스 18홀 라운딩', qty: 3, unit: '명', costVnd: 3150000, priceVnd: 4200000, booking: '확정', note: '' },
+                    { id: 3, date: '2026-01-14', time: '08:30', category: '골프', content: '트윈도브스 18홀 라운딩', qty: 3, unit: '명', costVnd: 3150000, priceVnd: 4200000, booking: '확정', note: '티오프 08:00' },
                     { id: 4, date: '2026-01-14', time: '18:00', category: '식사', content: '석식 (한솔식당)', qty: 3, unit: '인', costVnd: 300000, priceVnd: 500000, booking: '미정', note: '' },
                 ]
             }
@@ -315,7 +316,7 @@
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
                                             <th className="px-8 py-5">고객명 (Khách hàng)</th>
-                                            <th className="px-8 py-5">일정 (Lịch trình)</th>
+                                            <th className="px-8 py-5">일정 및 항공 (Lịch trình & Bay)</th>
                                             <th className="px-8 py-5 text-center">상태 (Trạng thái)</th>
                                             {userRole === 'admin' && <th className="px-8 py-5 text-right">총 견적 (Tổng giá)</th>}
                                             <th className="px-8 py-5 text-right">관리 (Quản lý)</th>
@@ -324,8 +325,28 @@
                                     <tbody className="divide-y divide-slate-100">
                                         {trips.map(trip => (
                                             <tr key={trip.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-8 py-6 text-lg text-slate-800">{trip.client}</td>
-                                                <td className="px-8 py-6 text-slate-500 text-sm">{trip.title} <span className="text-blue-500 font-bold">({trip.pax}명)</span></td>
+                                                <td className="px-8 py-6">
+                                                    <p className="text-lg text-slate-800">{trip.client}</p>
+                                                    <p className="text-xs text-slate-400 font-medium">({trip.pax}명)</p>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="text-slate-800 text-sm mb-2">{trip.title}</div>
+                                                    {/* 항공 정보 리스트 표시 업데이트 */}
+                                                    <div className="flex flex-col gap-1 text-[11px] text-slate-500">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black">IN</span>
+                                                            <span className="font-bold">{trip.startDate}</span>
+                                                            <span className="text-slate-800 font-black">{trip.flightInfo.in.arrTime} 도착</span>
+                                                            <span className="text-slate-400">({trip.flightInfo.in.flight})</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-black">OUT</span>
+                                                            <span className="font-bold">{trip.endDate}</span>
+                                                            <span className="text-slate-800 font-black">{trip.flightInfo.out.depTime} 출발</span>
+                                                            <span className="text-slate-400">({trip.flightInfo.out.flight})</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td className="px-8 py-6 text-center"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">{trip.status}</span></td>
                                                 {userRole === 'admin' && (
                                                     <td className="px-8 py-6 text-right font-black text-slate-800 text-lg">
