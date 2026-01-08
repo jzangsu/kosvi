@@ -6,256 +6,259 @@
     <title>KOSVI Travel Manager</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel CDN (브라우저에서 직접 실행용) -->
+    <!-- React & Babel CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
         .animate-spin-slow { animation: spin 3s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
 
         // 아이콘 헬퍼 컴포넌트
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
+                if (window.lucide) window.lucide.createIcons();
             }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        // 데이터 초기값
-        const INITIAL_TRIPS = [
-            { id: 1, destination: '다낭/호이안 4일', client: '김철수 외 3명', date: '2026-02-15', status: '진행중', amount: '₩2,400,000' },
-            { id: 2, destination: '나트랑 골프 투어', client: '이영희 외 2명', date: '2026-03-10', status: '예약완료', amount: '₩4,500,000' },
-            { id: 3, destination: '하노이/하롱베이 5일', client: '박지민 외 5명', date: '2026-01-20', status: '출발임박', amount: '₩3,800,000' },
-            { id: 4, destination: '푸꾸옥 프리미엄 팩', client: '최서연 외 1명', date: '2026-04-05', status: '예약완료', amount: '₩1,900,000' },
-        ];
+        // 초기 데이터 (법인장님께서 관리하실 실제 데이터 구조)
+        const INITIAL_DATA = {
+            trips: [
+                { id: 1, title: '다낭/호이안 3박 4일 패키지', client: '이정우 외 2명', date: '2026-01-15', status: '진행중', price: 2450000, category: '패키지' },
+                { id: 2, title: '나트랑 빈펄 리조트 골프 투어', client: '박상현 외 3명', date: '2026-02-10', status: '예약완료', price: 4800000, category: '골프' },
+                { id: 3, title: '하노이/하롱베이 기업 연수', client: '(주)대웅에스앤티', date: '2026-01-20', status: '출발임박', price: 12500000, category: '기업' },
+                { id: 4, title: '푸꾸옥 자유여행 5일', client: '최유진 님', date: '2026-03-05', status: '예약완료', price: 1850000, category: '자유여행' }
+            ],
+            clients: [
+                { id: 1, name: '이정우', phone: '010-1234-5678', recentTrip: '다낭/호이안', totalSpend: '₩2.45M' },
+                { id: 2, name: '(주)대웅에스앤티', phone: '02-555-1234', recentTrip: '하노이 연수', totalSpend: '₩12.5M' }
+            ]
+        };
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [trips] = useState(INITIAL_TRIPS);
+            const [trips, setTrips] = useState(INITIAL_DATA.trips);
+            const [searchTerm, setSearchTerm] = useState('');
 
-            // 상단 통계 카드
-            const StatCard = ({ title, value, icon, trend, color }) => (
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{title}</p>
-                            <h3 className="text-2xl font-bold mt-2 text-gray-900">{value}</h3>
-                            {trend && (
-                                <div className="flex items-center mt-2 text-green-600 text-sm">
-                                    <Icon name="trending-up" size={16} className="mr-1" />
-                                    <span>{trend}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className={`p-3 ${color} rounded-lg`}>
-                            <Icon name={icon} size={24} />
-                        </div>
-                    </div>
-                </div>
-            );
+            // 필터링된 일정
+            const filteredTrips = useMemo(() => {
+                return trips.filter(trip => 
+                    trip.title.includes(searchTerm) || trip.client.includes(searchTerm)
+                );
+            }, [searchTerm, trips]);
+
+            // 수익 합계 계산
+            const totalRevenue = useMemo(() => {
+                return trips.reduce((acc, curr) => acc + curr.price, 0).toLocaleString();
+            }, [trips]);
 
             return (
-                <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden">
+                <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden">
                     {/* 사이드바 */}
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0">
                         <div className="p-6">
                             <div className="flex items-center gap-3">
-                                <div className="bg-blue-600 p-2 rounded-lg">
-                                    <Icon name="globe" className="text-white" />
+                                <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
+                                    <Icon name="globe" className="text-white" size={24} />
                                 </div>
-                                <h1 className="text-xl font-bold tracking-tight">KOSVI Travel</h1>
+                                <div>
+                                    <h1 className="text-lg font-bold tracking-tight">KOSVI Travel</h1>
+                                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Management v2.0</p>
+                                </div>
                             </div>
-                            <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest font-semibold">Management System</p>
                         </div>
 
-                        <nav className="flex-1 px-4 py-4 overflow-y-auto">
-                            <ul className="space-y-2">
-                                {[
-                                    { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
-                                    { id: 'trips', icon: 'map', label: '여행 일정 관리' },
-                                    { id: 'clients', icon: 'users', label: '고객 명단' },
-                                    { id: 'calendar', icon: 'calendar', label: '운행 캘린더' },
-                                    { id: 'statistics', icon: 'pie-chart', label: '매출 통계' },
-                                    { id: 'settings', icon: 'settings', label: '시스템 설정' },
-                                ].map((item) => (
-                                    <li key={item.id}>
-                                        <button
-                                            onClick={() => setActiveTab(item.id)}
-                                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                                                activeTab === item.id 
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-                                                : 'text-slate-300 hover:bg-slate-800'
-                                            }`}
-                                        >
-                                            <Icon name={item.icon} size={20} />
-                                            <span className="font-medium text-sm">{item.label}</span>
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
+                        <nav className="flex-1 px-4 py-6 space-y-1">
+                            {[
+                                { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
+                                { id: 'trips', icon: 'map', label: '여행 일정 관리' },
+                                { id: 'clients', icon: 'users', label: '고객 명단 관리' },
+                                { id: 'calendar', icon: 'calendar', label: '운행 일정표' },
+                                { id: 'finance', icon: 'dollar-sign', label: '수익/지출 통계' },
+                                { id: 'settings', icon: 'settings', label: '시스템 설정' },
+                            ].map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                        activeTab === item.id 
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                                    }`}
+                                >
+                                    <Icon name={item.icon} size={20} />
+                                    <span className="font-medium text-sm">{item.label}</span>
+                                </button>
+                            ))}
                         </nav>
 
-                        {/* 프로필 섹션 */}
+                        {/* 법인장님 프로필 섹션 */}
                         <div className="p-4 border-t border-slate-800">
-                            <div className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-xl">
-                                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white shadow-inner">
+                            <div className="flex items-center gap-3 p-3 bg-slate-800/40 rounded-2xl border border-slate-700/50">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center font-bold text-white">
                                     HC
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-sm font-semibold truncate">허창수 법인장</p>
-                                    <p className="text-xs text-slate-400">최고 관리자</p>
+                                    <p className="text-[10px] text-slate-400 font-medium">Administrator</p>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
                     {/* 메인 콘텐츠 영역 */}
-                    <main className="flex-1 overflow-y-auto">
-                        <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+                    <main className="flex-1 overflow-y-auto flex flex-col">
+                        {/* 상단 헤더 */}
+                        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
                             <div className="relative w-96">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                                     <Icon name="search" size={18} />
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder="일정 번호, 고객명 검색..." 
-                                    className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                                    placeholder="일정, 고객명, 예약번호 검색..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 transition-all text-sm outline-none"
                                 />
                             </div>
-                            <div className="flex items-center gap-6">
-                                <button className="text-gray-400 hover:text-gray-600 relative">
-                                    <Icon name="bell" size={22} />
-                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                            <div className="flex items-center gap-4">
+                                <button className="p-2.5 bg-slate-100 rounded-xl text-slate-500 hover:bg-slate-200 transition-colors">
+                                    <Icon name="bell" size={20} />
                                 </button>
-                                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm active:scale-95">
+                                <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md active:scale-95 font-semibold text-sm">
                                     <Icon name="plus" size={18} />
-                                    <span className="text-sm font-semibold">신규 일정 등록</span>
+                                    <span>신규 등록</span>
                                 </button>
                             </div>
                         </header>
 
-                        <div className="p-8 max-w-7xl mx-auto">
+                        <div className="p-8 max-w-7xl mx-auto w-full">
                             {activeTab === 'dashboard' ? (
-                                <div className="space-y-8">
-                                    <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 bg-gradient-to-r from-blue-50 to-transparent p-6 rounded-2xl border border-blue-100/50">
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    {/* 환영 배너 */}
+                                    <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center">
                                         <div>
-                                            <h2 className="text-3xl font-bold text-gray-900">오늘의 업무 현황</h2>
-                                            <p className="text-gray-600 mt-1">KOSVI 여행사의 실시간 예약 데이터를 확인하세요.</p>
+                                            <h2 className="text-3xl font-bold text-slate-900">오늘의 KOSVI 현황</h2>
+                                            <p className="text-slate-500 mt-2">법인장님, 현재 14건의 활성 투어가 정상 진행 중입니다.</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium text-blue-600 uppercase tracking-wider">Today's Date</p>
-                                            <p className="text-lg font-bold text-gray-700">2026년 1월 8일</p>
+                                            <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-2 uppercase tracking-wider">Server Online</span>
+                                            <p className="text-xl font-bold text-slate-700">2026년 1월 8일</p>
                                         </div>
                                     </div>
 
+                                    {/* 주요 통계 카드 */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        <StatCard title="전체 예약" value="52건" icon="calendar" trend="+12% 증가" color="bg-blue-50 text-blue-600" />
-                                        <StatCard title="현재 투어" value="14팀" icon="plane" trend="정상 진행" color="bg-green-50 text-green-600" />
-                                        <StatCard title="신규 고객" value="1,248명" icon="users" trend="+32명 (이번주)" color="bg-purple-50 text-purple-600" />
-                                        <StatCard title="월 매출액" value="₩21.5M" icon="dollar-sign" trend="+15% 달성" color="bg-orange-50 text-orange-600" />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 text-sm font-bold">
-                                                <span>최근 예약 내역</span>
-                                                <button className="text-blue-600 hover:underline font-semibold">상세보기</button>
-                                            </div>
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-left">
-                                                    <thead>
-                                                        <tr className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100">
-                                                            <th className="px-6 py-4">목적지</th>
-                                                            <th className="px-6 py-4">고객명</th>
-                                                            <th className="px-6 py-4">상태</th>
-                                                            <th className="px-6 py-4 text-right">금액</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-100">
-                                                        {trips.map((trip) => (
-                                                            <tr key={trip.id} className="hover:bg-blue-50/30 transition-colors">
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="w-8 h-8 rounded bg-gray-100 text-gray-400 flex items-center justify-center">
-                                                                            <Icon name="map" size={16} />
-                                                                        </div>
-                                                                        <span className="font-semibold text-sm">{trip.destination}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <p className="text-sm font-medium text-gray-900">{trip.client}</p>
-                                                                    <p className="text-xs text-gray-400">{trip.date}</p>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-xs font-bold uppercase tracking-wide">
-                                                                    <span className={`px-2.5 py-1 rounded-full ${
-                                                                        trip.status === '진행중' ? 'bg-green-100 text-green-700' :
-                                                                        trip.status === '예약완료' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
-                                                                    }`}>{trip.status}</span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">{trip.amount}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
-                                            <h3 className="text-lg font-bold text-gray-900 mb-6">인기 목적지</h3>
-                                            <div className="space-y-6 flex-1">
-                                                {[
-                                                    { name: '다낭', share: '45%', color: 'bg-blue-500' },
-                                                    { name: '하노이', share: '25%', color: 'bg-green-500' },
-                                                    { name: '나트랑', share: '20%', color: 'bg-purple-500' },
-                                                    { name: '기타', share: '10%', color: 'bg-gray-300' },
-                                                ].map((city) => (
-                                                    <div key={city.name}>
-                                                        <div className="flex justify-between text-xs font-bold mb-1 uppercase text-gray-500 tracking-wider">
-                                                            <span>{city.name}</span>
-                                                            <span>{city.share}</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                                            <div className={`h-2 rounded-full ${city.color}`} style={{ width: city.share }}></div>
-                                                        </div>
+                                        {[
+                                            { title: '이번달 매출액', value: `₩${totalRevenue}`, icon: 'trending-up', color: 'text-blue-600', bg: 'bg-blue-50' },
+                                            { title: '활성 일정', value: '14팀', icon: 'map-pin', color: 'text-green-600', bg: 'bg-green-50' },
+                                            { title: '신규 예약', value: '52건', icon: 'calendar-check', color: 'text-purple-600', bg: 'bg-purple-50' },
+                                            { title: '전체 고객수', value: '1,248명', icon: 'users', color: 'text-orange-600', bg: 'bg-orange-50' },
+                                        ].map((stat, idx) => (
+                                            <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.title}</p>
+                                                        <h3 className="text-2xl font-bold mt-2 text-slate-900">{stat.value}</h3>
                                                     </div>
-                                                ))}
-                                            </div>
-                                            <div className="mt-8 p-4 bg-slate-900 rounded-xl text-white">
-                                                <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">매출 목표 달성률</p>
-                                                <div className="flex items-baseline gap-2">
-                                                    <span className="text-3xl font-bold">82%</span>
-                                                    <span className="text-xs text-green-400 font-bold">+5%</span>
+                                                    <div className={`p-3 ${stat.bg} ${stat.color} rounded-xl`}>
+                                                        <Icon name={stat.icon} size={24} />
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 메인 테이블 (최근 일정 관리) */}
+                                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                                <Icon name="list" size={20} className="text-blue-600" />
+                                                최근 여행 일정 목록
+                                            </h3>
+                                            <button className="text-blue-600 text-xs font-bold hover:underline">필터 설정</button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider text-[11px]">
+                                                    <tr>
+                                                        <th className="px-6 py-4">일정 및 상품명</th>
+                                                        <th className="px-6 py-4">주요 고객</th>
+                                                        <th className="px-6 py-4">출발 날짜</th>
+                                                        <th className="px-6 py-4">상태</th>
+                                                        <th className="px-6 py-4 text-right">금액</th>
+                                                        <th className="px-6 py-4"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {filteredTrips.map((trip) => (
+                                                        <tr key={trip.id} className="hover:bg-slate-50 transition-colors group">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                                                        <Icon name="map" size={18} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-900">{trip.title}</p>
+                                                                        <p className="text-[11px] text-slate-400">{trip.category}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 font-medium text-slate-600">{trip.client}</td>
+                                                            <td className="px-6 py-4 text-slate-500">{trip.date}</td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                                                                    trip.status === '진행중' ? 'bg-green-100 text-green-700' :
+                                                                    trip.status === '예약완료' ? 'bg-blue-100 text-blue-700' : 
+                                                                    'bg-orange-100 text-orange-700'
+                                                                }`}>
+                                                                    {trip.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                                                ₩{(trip.price / 10000).toLocaleString()}만
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <button className="text-slate-300 hover:text-slate-600 transition-colors">
+                                                                    <Icon name="more-vertical" size={18} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-24 text-center">
-                                    <div className="bg-blue-50 p-6 rounded-full mb-6">
-                                        <Icon name="settings" size={64} className="text-blue-500 animate-spin-slow" />
+                                <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in duration-700">
+                                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                                        <Icon name="settings" size={48} className="text-blue-500 animate-spin-slow" />
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-900">{activeTab.toUpperCase()} 준비 중</h2>
-                                    <p className="text-gray-500 mt-2 max-w-sm">법인장님, 이 기능은 현재 내부 시스템 연동 작업 중입니다. 곧 찾아뵙겠습니다.</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">{activeTab.toUpperCase()} 데이터 연동 중</h2>
+                                    <p className="text-slate-500 mt-2 max-w-sm">법인장님, 요청하신 상세 데이터와 관리 기능은 현재 로컬 시스템과 동기화 작업 중입니다.</p>
                                     <button 
                                         onClick={() => setActiveTab('dashboard')}
-                                        className="mt-8 bg-white border border-gray-200 px-6 py-2 rounded-lg font-bold text-blue-600 hover:bg-gray-50 shadow-sm"
+                                        className="mt-8 px-8 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-blue-600 hover:bg-slate-50 shadow-sm transition-all"
                                     >
-                                        대시보드로 돌아가기
+                                        메인 대시보드로 돌아가기
                                     </button>
                                 </div>
                             )}
