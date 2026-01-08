@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # 빌드 과정을 생략하고 바로 배포하도록 수정했습니다.
+      # 빌드 단계(npm run build)를 아예 삭제했습니다. 로봇이 헷갈릴 일이 없습니다.
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
