@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -22,13 +21,20 @@
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 인쇄 시 설정 */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; height: auto; overflow: visible; }
+            #content-area { padding: 0; overflow: visible; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 overflow-hidden h-screen font-sans">
 
-    <!-- 1. 로그인/외부 접속 페이지 (초기 화면) -->
+    <!-- 1. 로그인/외부 접속 페이지 -->
     <div id="login-view" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1E3A8A] to-[#111827] relative overflow-hidden">
-        <!-- 배경 장식 요소 -->
         <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
             <div class="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay"></div>
             <div class="absolute bottom-10 right-10 w-96 h-96 bg-orange-500 rounded-full blur-3xl mix-blend-overlay"></div>
@@ -44,7 +50,6 @@
             </div>
 
             <form onsubmit="handleLogin(event)" class="space-y-4">
-                <!-- 권한 선택 (테스트용) -->
                 <div class="bg-slate-900/50 p-1 rounded-xl flex mb-4 border border-white/10">
                     <button type="button" onclick="selectRole('admin')" id="role-admin" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#F97316] text-white shadow-md">
                         관리자 (Admin)
@@ -78,17 +83,13 @@
                     <i data-lucide="globe" class="w-3 h-3"></i> KOSVI 홈페이지로 이동
                 </a>
             </div>
-
-            <p class="text-center text-[10px] text-blue-300/50 mt-4">
-                Authorized Personnel Only | KOSVI Vietnam
-            </p>
         </div>
     </div>
 
-    <!-- 2. 메인 대시보드 (로그인 후 보임) -->
+    <!-- 2. 메인 대시보드 -->
     <div id="main-view" class="hidden w-full h-full flex animate-fade-in">
-        <!-- 사이드바 -->
-        <nav class="w-64 bg-[#1E3A8A] text-white flex flex-col shadow-2xl flex-shrink-0">
+        <!-- 사이드바 (인쇄시 숨김) -->
+        <nav class="w-64 bg-[#1E3A8A] text-white flex flex-col shadow-2xl flex-shrink-0 no-print">
             <div class="p-6 flex items-center gap-3">
                 <div class="w-10 h-10 bg-[#F97316] rounded flex items-center justify-center shadow-lg">
                     <span class="text-xl font-black italic">K</span>
@@ -100,15 +101,14 @@
             </div>
 
             <div class="flex-1 px-4 py-4 space-y-1">
-                <!-- 대시보드 메뉴: 관리자에게만 보임 -->
                 <button onclick="switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-white/10 font-bold">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span>대시보드</span>
                 </button>
                 <button onclick="switchTab('bookings')" id="btn-bookings" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 text-slate-300">
                     <i data-lucide="calendar-days" class="w-5 h-5"></i> <span>예약 현황</span>
                 </button>
-                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-white/5">
-                    <i data-lucide="users" class="w-5 h-5"></i> <span>고객 명단</span>
+                <button onclick="switchTab('estimate')" id="btn-estimate" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 text-slate-300">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> <span>견적서 작성</span>
                 </button>
             </div>
 
@@ -128,8 +128,8 @@
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="flex-1 flex flex-col overflow-hidden bg-slate-50">
-            <!-- 헤더 -->
-            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 shadow-sm">
+            <!-- 헤더 (인쇄시 숨김) -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 shadow-sm no-print">
                 <div class="flex items-center gap-2">
                     <i data-lucide="map-pin" class="w-3 h-3 text-[#F97316]"></i>
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Vietnam Head Office</span>
@@ -139,38 +139,33 @@
                         <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Today</p>
                         <p class="text-xs font-bold mt-1">2026. 01. 08</p>
                     </div>
-                    <button class="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-500 relative hover:bg-slate-100 transition-colors">
-                        <i data-lucide="bell" class="w-5 h-5"></i>
-                        <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white"></span>
-                    </button>
                 </div>
             </header>
 
-            <!-- 뷰포트 (내용이 바뀌는 영역) -->
+            <!-- 뷰포트 -->
             <div class="flex-1 overflow-y-auto p-8" id="content-area">
-                <!-- 자바스크립트로 내용이 주입됩니다 -->
+                <!-- 콘텐츠 주입 영역 -->
             </div>
         </main>
     </div>
 
     <script>
         // --- Global State ---
-        let currentRole = 'admin'; // 'admin' or 'staff'
+        let currentRole = 'admin';
         let currentTab = 'dashboard';
-        let currentSearch = '';
-
-        // --- Mock Data (VND 단위로 변경됨) ---
-        // 환율 가정: 1 KRW ≈ 20 VND (편의상 계산)
-        const bookings = [
+        
+        // --- Mock Data ---
+        let bookings = [
             { id: 'BK001', customer: '김철수', tour: '다낭 3박 4일 패키지', date: '2026-02-15', price: 25000000, status: 'Confirmed', payment: 'Paid' },
             { id: 'BK002', customer: '이영희', tour: '나트랑 골프 투어', date: '2026-03-01', price: 42000000, status: 'Pending', payment: 'Partial' },
-            { id: 'BK003', customer: '박지민', tour: '하노이 비즈니스 투어', date: '2026-02-10', price: 17000000, status: 'Confirmed', payment: 'Unpaid' },
-            { id: 'BK004', customer: '최유진', tour: '호치민 시티 투어', date: '2026-01-25', price: 9000000, status: 'Completed', payment: 'Paid' },
+            { id: 'BK003', customer: '임창호', tour: '호치민-무이네 투어', date: '2024-03-13', price: 75400000, status: 'Completed', payment: 'Paid' },
         ];
 
         // --- Helper Functions ---
         const formatVND = (price) => price.toLocaleString() + ' ₫';
+        const formatKRW = (price) => '₩' + price.toLocaleString();
 
+        // --- Auth Logic ---
         function selectRole(role) {
             currentRole = role;
             const adminBtn = document.getElementById('role-admin');
@@ -190,968 +185,339 @@
 
         function handleLogin(e) {
             e.preventDefault();
-            const loginView = document.getElementById('login-view');
-            const mainView = document.getElementById('main-view');
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
             
-            // 로그인 화면 숨기고 메인 화면 표시
-            loginView.classList.add('hidden');
-            mainView.classList.remove('hidden');
-            mainView.classList.add('flex');
-
-            // 권한별 UI 설정
             if (currentRole === 'admin') {
-                const dashboardBtn = document.getElementById('btn-dashboard');
-                if (dashboardBtn) dashboardBtn.classList.remove('hidden');
+                document.getElementById('btn-dashboard').classList.remove('hidden');
+                document.getElementById('btn-estimate').classList.remove('hidden');
                 document.getElementById('user-name').innerText = "허창수 법인장";
                 document.getElementById('user-role').innerText = "Master Admin";
                 document.getElementById('user-avatar').innerText = "허";
                 switchTab('dashboard');
             } else {
-                const dashboardBtn = document.getElementById('btn-dashboard');
-                if (dashboardBtn) dashboardBtn.classList.add('hidden'); // 대시보드 메뉴 숨김
+                document.getElementById('btn-dashboard').classList.add('hidden');
+                document.getElementById('btn-estimate').classList.add('hidden'); // 직원에게 견적서 숨김 (선택사항)
                 document.getElementById('user-name').innerText = "김직원 매니저";
                 document.getElementById('user-role').innerText = "Staff";
                 document.getElementById('user-avatar').innerText = "김";
-                switchTab('bookings'); // 바로 예약 현황으로 이동
+                switchTab('bookings');
             }
-            
             lucide.createIcons();
         }
 
         function handleLogout() {
-            if(confirm('로그아웃 하시겠습니까?')) {
-                window.location.reload();
-            }
+            if(confirm('로그아웃 하시겠습니까?')) window.location.reload();
         }
 
-        function renderStatCard(icon, iconClass, title, value, badge, badgeClass) {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 ${iconClass} rounded-xl"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
-                        <span class="${badgeClass} text-xs font-bold px-2 py-1 rounded-md">${badge}</span>
-                    </div>
-                    <p class="text-slate-400 text-[11px] font-bold uppercase mb-1 tracking-wider">${title}</p>
-                    <h3 class="text-2xl font-bold">${value}</h3>
-                </div>
-            `;
-        }
-
-        function getStatusClass(status) {
-            if (status === 'Confirmed') return 'bg-blue-100 text-blue-700';
-            if (status === 'Completed') return 'bg-green-100 text-green-700';
-            return 'bg-yellow-100 text-yellow-700';
-        }
-
-        // --- Render Views ---
-        function renderDashboard() {
-            // 직원 접근 제어 (혹시 모를 우회 접근 방지)
-            if (currentRole === 'staff') {
-                return `<div class="p-8 flex flex-col items-center justify-center h-full text-slate-400">
-                    <i data-lucide="shield-alert" class="w-16 h-16 mb-4 text-slate-300"></i>
-                    <h3 class="text-lg font-bold text-slate-600">접근 권한이 없습니다</h3>
-                    <p class="text-sm">관리자만 대시보드를 조회할 수 있습니다.</p>
-                </div>`;
-            }
-
-            return `
-                <div class="space-y-8 max-w-7xl animate-fade-in">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-800">대시보드</h2>
-                            <p class="text-slate-500 text-sm">KOSVI 여행사 실시간 운영 요약 (Admin Only)</p>
-                        </div>
-                        <button onclick="alert('신규 예약 등록 기능은 준비 중입니다.')" class="bg-[#F97316] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-orange-600 transition-all flex items-center gap-2 active:scale-95">
-                            <i data-lucide="plus" class="w-4 h-4"></i> 신규 예약 등록
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        ${renderStatCard('credit-card', 'bg-blue-50 text-blue-700', '총 매출', '93,000,000 ₫', '+12%', 'text-green-600 bg-green-50')}
-                        ${renderStatCard('calendar-days', 'bg-orange-50 text-orange-600', '진행 중인 예약', '12건', '+5%', 'text-green-600 bg-green-50')}
-                        ${renderStatCard('users', 'bg-indigo-50 text-indigo-700', '전체 고객 수', '48명', 'New', 'text-slate-400 bg-slate-50')}
-                        ${renderStatCard('check-circle-2', 'bg-emerald-50 text-emerald-700', '투어 완료율', '94%', 'Excellent', 'text-emerald-600 bg-emerald-50')}
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-                                <h3 class="font-bold text-slate-800">최근 예약 내역</h3>
-                                <button onclick="switchTab('bookings')" class="text-xs font-bold text-blue-800 hover:text-orange-600 flex items-center gap-1 transition-colors">
-                                    전체보기 <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                                </button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left">
-                                    <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
-                                        <tr>
-                                            <th class="px-6 py-4">고객</th>
-                                            <th class="px-6 py-4">투어 상품</th>
-                                            <th class="px-6 py-4">상태</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-50 text-sm">
-                                        ${bookings.slice(0, 4).map(item => `
-                                            <tr class="hover:bg-slate-50 transition-colors group">
-                                                <td class="px-6 py-4">
-                                                    <p class="font-bold group-hover:text-blue-800">${item.customer}</p>
-                                                    <p class="text-[10px] text-slate-400">${item.id}</p>
-                                                </td>
-                                                <td class="px-6 py-4 text-slate-600">${item.tour}</td>
-                                                <td class="px-6 py-4">
-                                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${getStatusClass(item.status)}">${item.status}</span>
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="space-y-6">
-                            <div class="bg-[#1E3A8A] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                                <div class="absolute top-0 right-0 p-4 opacity-10">
-                                    <i data-lucide="bell" class="w-20 h-20"></i>
-                                </div>
-                                <h4 class="font-bold mb-3 flex items-center gap-2 text-orange-400">
-                                    <i data-lucide="bell" class="w-4 h-4"></i> 실시간 알림
-                                </h4>
-                                <p class="text-xs text-blue-100 leading-relaxed mb-6">
-                                    베트남 설 연휴(Tet) 관련 항공권 예약이 마감 임박입니다. 잔여 좌석을 확인해 주세요.
-                                </p>
-                                <button class="w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold border border-white/20 transition-all backdrop-blur-sm">
-                                    상세 공지 보기
-                                </button>
-                            </div>
-                            
-                            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                                <h4 class="font-bold text-slate-800 mb-4 text-sm">업무 퀵 링크</h4>
-                                <div class="space-y-2">
-                                    <button class="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-slate-100">
-                                        항공권 견적 발행
-                                    </button>
-                                    <button class="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-slate-100">
-                                        비자 접수 현황
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderBookings(searchTerm = '') {
-            const filtered = bookings.filter(b => 
-                b.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                b.tour.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            return `
-                <div class="space-y-6 max-w-7xl animate-fade-in">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <h2 class="text-2xl font-bold text-slate-800">예약 통합 관리</h2>
-                        <div class="relative">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
-                            <input 
-                                type="text" 
-                                placeholder="고객명 또는 투어명 검색..."
-                                class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm w-full sm:w-80 focus:ring-2 focus:ring-[#1E3A8A] focus:outline-none transition-all"
-                                value="${searchTerm}"
-                                oninput="updateSearch(this.value)"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead class="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                    <tr>
-                                        <th class="px-6 py-5">No.</th>
-                                        <th class="px-6 py-5">고객명</th>
-                                        <th class="px-6 py-5">투어 정보</th>
-                                        <th class="px-6 py-5">출발 날짜</th>
-                                        <th class="px-6 py-5">금액 (VND)</th>
-                                        <th class="px-6 py-5">결제 상태</th>
-                                        <th class="px-6 py-5 text-center">작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50 text-sm">
-                                    ${filtered.map(item => `
-                                        <tr class="hover:bg-slate-50 transition-colors">
-                                            <td class="px-6 py-4 font-bold text-blue-900">${item.id}</td>
-                                            <td class="px-6 py-4 font-medium">${item.customer}</td>
-                                            <td class="px-6 py-4 text-slate-600">${item.tour}</td>
-                                            <td class="px-6 py-4 text-slate-500 font-medium">${item.date}</td>
-                                            <td class="px-6 py-4 font-bold text-slate-900">${formatVND(item.price)}</td>
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-1.5 text-xs font-bold ${item.payment === 'Paid' ? 'text-green-600' : 'text-orange-500'}">
-                                                    <i data-lucide="${item.payment === 'Paid' ? 'check-circle-2' : 'alert-circle'}" class="w-3.5 h-3.5"></i>
-                                                    ${item.payment}
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 text-center">
-                                                <button class="text-slate-300 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100">
-                                                    <i data-lucide="more-vertical" class="w-4 h-4"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- Core Logic ---
+        // --- Tab Rendering Logic ---
         function switchTab(tab) {
             currentTab = tab;
             
-            // 탭 스타일 업데이트 (존재하는 경우에만)
-            const dashboardBtn = document.getElementById('btn-dashboard');
-            const bookingsBtn = document.getElementById('btn-bookings');
-            
-            if (dashboardBtn) {
-                dashboardBtn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === 'dashboard' ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
-            }
-            if (bookingsBtn) {
-                bookingsBtn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === 'bookings' ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
-            }
+            // UI 업데이트
+            ['dashboard', 'bookings', 'estimate'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if(btn) btn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${tab === t ? 'bg-white/10 font-bold' : 'hover:bg-white/5 text-slate-300'}`;
+            });
 
-            // 콘텐츠 렌더링
-            const contentArea = document.getElementById('content-area');
-            if (tab === 'dashboard') {
-                contentArea.innerHTML = renderDashboard();
-            } else {
-                contentArea.innerHTML = renderBookings(currentSearch);
-            }
+            const content = document.getElementById('content-area');
             
-            // 아이콘 새로고침
+            if (tab === 'dashboard') content.innerHTML = renderDashboard();
+            else if (tab === 'bookings') content.innerHTML = renderBookings();
+            else if (tab === 'estimate') renderEstimate(); // 함수 내에서 innerHTML 처리
+            
             lucide.createIcons();
         }
 
-        function updateSearch(val) {
-            currentSearch = val;
-            const contentArea = document.getElementById('content-area');
-            contentArea.innerHTML = renderBookings(val);
-            lucide.createIcons();
-            
-            // 입력 포커스 유지
-            const input = document.querySelector('input');
-            if(input) {
-                input.focus();
-                input.setSelectionRange(input.value.length, input.value.length);
-            }
+        // --- View 1: Dashboard ---
+        function renderDashboard() {
+            if (currentRole === 'staff') return `<div class="p-8 text-center text-slate-400">권한이 없습니다.</div>`;
+            return `
+                <div class="space-y-8 max-w-7xl animate-fade-in">
+                    <h2 class="text-2xl font-bold text-slate-800">대시보드</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><p class="text-slate-400 text-xs font-bold uppercase">총 매출 (VND)</p><h3 class="text-2xl font-bold">142,400,000 ₫</h3></div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><p class="text-slate-400 text-xs font-bold uppercase">진행 중인 예약</p><h3 class="text-2xl font-bold">3건</h3></div>
+                    </div>
+                </div>`;
         }
 
-        // 초기 실행: 아이콘 로드
+        // --- View 2: Bookings ---
+        function renderBookings() {
+            return `
+                <div class="space-y-6 max-w-7xl animate-fade-in">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-slate-800">예약 통합 관리</h2>
+                        <button onclick="switchTab('estimate')" class="bg-[#1E3A8A] text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-900 transition-colors flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 견적서 작성 / 예약 추가
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <tr><th class="px-6 py-5">ID</th><th class="px-6 py-5">고객명</th><th class="px-6 py-5">투어 상품</th><th class="px-6 py-5">출발일</th><th class="px-6 py-5">금액 (VND)</th><th class="px-6 py-5">상태</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50 text-sm">
+                                ${bookings.map(b => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 font-bold text-blue-900">${b.id}</td>
+                                        <td class="px-6 py-4 font-medium">${b.customer}</td>
+                                        <td class="px-6 py-4 text-slate-600">${b.tour}</td>
+                                        <td class="px-6 py-4 text-slate-500">${b.date}</td>
+                                        <td class="px-6 py-4 font-bold">${formatVND(b.price)}</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">${b.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        // --- View 3: Estimate Builder (견적서 작성) ---
+        let estimateItems = [
+            { type: 'HOTEL', desc: '빈펄 랜드마크 81 (3박)', unit: '박', price: 3600000, qty: 3, markup: 1.1, cost: 3200000 },
+            { type: 'CAR', desc: '16인승 리무진 (전일정)', unit: '일', price: 2500000, qty: 4, markup: 1.2, cost: 2000000 },
+        ];
+
+        function renderEstimate() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <div class="max-w-5xl mx-auto animate-fade-in pb-20">
+                    <!-- 상단 컨트롤 (인쇄 시 숨김) -->
+                    <div class="flex justify-between items-center mb-6 no-print">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">견적서 작성</h2>
+                            <p class="text-sm text-slate-500">엑셀 양식 기반 자동 계산 시스템</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.print()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors flex items-center gap-2">
+                                <i data-lucide="printer" class="w-4 h-4"></i> 인쇄 / PDF 저장
+                            </button>
+                            <button onclick="saveEstimate()" class="px-4 py-2 bg-[#F97316] text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors shadow-lg flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> 예약 저장
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 견적서 본문 (A4 스타일) -->
+                    <div class="bg-white p-10 shadow-2xl rounded-sm print:shadow-none print:p-0" id="estimate-paper">
+                        
+                        <!-- 헤더 -->
+                        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
+                            <div>
+                                <h1 class="text-3xl font-black text-[#1E3A8A] tracking-tight">ESTIMATE</h1>
+                                <p class="text-sm font-bold text-slate-400 mt-1">견적서 / QUOTATION</p>
+                            </div>
+                            <div class="text-right">
+                                <h3 class="text-lg font-black text-slate-800">KOSVI CO.,LTD</h3>
+                                <p class="text-xs text-slate-500 mt-1">LP-38.OT03 Landmark Plus, Vinhomes Central Park<br>Binh Thanh Dist, HCMC</p>
+                                <p class="text-xs text-slate-500">Tel: 077 890 1861 | Admin: Heo Changsu</p>
+                            </div>
+                        </div>
+
+                        <!-- 고객 정보 입력 -->
+                        <div class="grid grid-cols-2 gap-8 mb-8">
+                            <div class="space-y-3">
+                                <div class="flex items-center">
+                                    <label class="w-24 text-xs font-bold text-slate-500 uppercase">고객명</label>
+                                    <input type="text" value="임창호 님" class="flex-1 border-b border-slate-200 py-1 px-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-500 bg-transparent">
+                                </div>
+                                <div class="flex items-center">
+                                    <label class="w-24 text-xs font-bold text-slate-500 uppercase">여행 일정</label>
+                                    <input type="text" value="2024-03-13 ~ 03-16" class="flex-1 border-b border-slate-200 py-1 px-2 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-transparent">
+                                </div>
+                                <div class="flex items-center">
+                                    <label class="w-24 text-xs font-bold text-slate-500 uppercase">인원</label>
+                                    <input type="number" value="3" class="w-20 border-b border-slate-200 py-1 px-2 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-transparent">
+                                    <span class="text-sm text-slate-500 ml-2">명</span>
+                                </div>
+                            </div>
+                            <div class="space-y-3 bg-slate-50 p-4 rounded-lg no-print">
+                                <p class="text-xs font-bold text-orange-600 mb-2 flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> 관리자 전용 (환율 설정)</p>
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs text-slate-500">적용 환율 (VND/KRW)</label>
+                                    <input type="number" value="5.5" class="w-24 text-right border rounded px-2 py-1 text-sm font-bold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 견적 테이블 -->
+                        <div class="mb-8">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-[#1E3A8A] text-white text-xs uppercase tracking-wider">
+                                        <th class="p-3 rounded-tl-lg">구분 (Type)</th>
+                                        <th class="p-3">내용 (Description)</th>
+                                        <th class="p-3 text-center">수량</th>
+                                        <th class="p-3 text-right">단가 (VND)</th>
+                                        <th class="p-3 text-right rounded-tr-lg">합계 (VND)</th>
+                                        <th class="p-3 bg-orange-600 w-10 text-center no-print">삭제</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estimate-tbody" class="text-sm text-slate-700 divide-y divide-slate-100">
+                                    <!-- JS로 렌더링 -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-50 font-black text-slate-800 border-t-2 border-slate-200">
+                                        <td colspan="4" class="p-4 text-right">총 합계 (Total Amount)</td>
+                                        <td class="p-4 text-right text-lg text-[#1E3A8A]" id="total-price-display">0 ₫</td>
+                                        <td class="no-print"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <button onclick="addItem()" class="mt-4 w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors font-bold text-sm flex items-center justify-center gap-2 no-print">
+                                <i data-lucide="plus" class="w-4 h-4"></i> 항목 추가하기
+                            </button>
+                        </div>
+
+                        <!-- 포함/불포함 사항 -->
+                        <div class="grid grid-cols-2 gap-6 mb-8 text-xs">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-bold text-blue-800 mb-2">■ 포함사항 (Included)</h4>
+                                <ul class="list-disc list-inside space-y-1 text-slate-600">
+                                    <li>전 일정 전용 차량 (기사 포함)</li>
+                                    <li>호텔 조식 및 일정상 식사</li>
+                                    <li>관광지 입장료</li>
+                                </ul>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg">
+                                <h4 class="font-bold text-slate-600 mb-2">□ 불포함사항 (Excluded)</h4>
+                                <ul class="list-disc list-inside space-y-1 text-slate-500">
+                                    <li>국제선 항공권</li>
+                                    <li>개인 경비 및 매너팁</li>
+                                    <li>여행자 보험</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- 하단 계좌 정보 -->
+                        <div class="border-t border-slate-200 pt-6 text-center">
+                            <p class="text-sm font-bold text-slate-800 mb-1">입금 계좌 (Bank Account)</p>
+                            <p class="text-sm text-slate-600">신한베트남 (Shinhan Vietnam): <span class="font-bold text-[#1E3A8A]">077 - 890 - 1861</span> (예금주: HEO CHANGSU)</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 관리자용 마진 분석 (인쇄시 숨김) -->
+                    <div class="mt-8 bg-slate-800 text-white p-6 rounded-xl shadow-lg no-print">
+                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-orange-400">
+                            <i data-lucide="pie-chart" class="w-5 h-5"></i> 관리자 전용 수익 분석 (Profit Analysis)
+                        </h3>
+                        <div class="grid grid-cols-3 gap-8 text-center">
+                            <div>
+                                <p class="text-slate-400 text-xs uppercase mb-1">총 원가 (Total Cost)</p>
+                                <p class="text-xl font-bold" id="admin-total-cost">0 ₫</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 text-xs uppercase mb-1">총 판매가 (Selling Price)</p>
+                                <p class="text-xl font-bold text-blue-300" id="admin-total-price">0 ₫</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 text-xs uppercase mb-1">예상 수익 (Profit)</p>
+                                <p class="text-xl font-bold text-orange-400" id="admin-profit">0 ₫</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            renderEstimateItems();
+        }
+
+        function renderEstimateItems() {
+            const tbody = document.getElementById('estimate-tbody');
+            if(!tbody) return;
+
+            let totalCost = 0;
+            let totalPrice = 0;
+
+            tbody.innerHTML = estimateItems.map((item, index) => {
+                const itemTotal = item.price * item.qty;
+                const itemCostTotal = item.cost * item.qty; // 원가 합계
+                totalPrice += itemTotal;
+                totalCost += itemCostTotal;
+
+                return `
+                <tr class="group hover:bg-slate-50">
+                    <td class="p-3">
+                        <select onchange="updateItem(${index}, 'type', this.value)" class="w-full bg-transparent font-bold text-slate-700 focus:outline-none">
+                            <option value="HOTEL" ${item.type==='HOTEL'?'selected':''}>호텔 (Hotel)</option>
+                            <option value="CAR" ${item.type==='CAR'?'selected':''}>차량 (Vehicle)</option>
+                            <option value="GOLF" ${item.type==='GOLF'?'selected':''}>골프 (Golf)</option>
+                            <option value="TOUR" ${item.type==='TOUR'?'selected':''}>투어 (Tour)</option>
+                            <option value="MEAL" ${item.type==='MEAL'?'selected':''}>식사 (Meal)</option>
+                        </select>
+                    </td>
+                    <td class="p-3">
+                        <input type="text" value="${item.desc}" onchange="updateItem(${index}, 'desc', this.value)" class="w-full bg-transparent focus:outline-none border-b border-transparent focus:border-blue-300">
+                    </td>
+                    <td class="p-3 text-center">
+                        <input type="number" value="${item.qty}" onchange="updateItem(${index}, 'qty', this.value)" class="w-12 text-center bg-slate-100 rounded focus:outline-none">
+                    </td>
+                    <td class="p-3 text-right">
+                        <div class="flex flex-col items-end">
+                            <input type="number" value="${item.price}" onchange="updateItem(${index}, 'price', this.value)" class="w-24 text-right font-bold bg-transparent focus:outline-none">
+                            <span class="text-[10px] text-slate-400 no-print">원가: <input type="number" value="${item.cost}" onchange="updateItem(${index}, 'cost', this.value)" class="w-16 text-right bg-slate-800 text-slate-200 rounded px-1"></span>
+                        </div>
+                    </td>
+                    <td class="p-3 text-right font-bold text-slate-800">
+                        ${formatVND(itemTotal)}
+                    </td>
+                    <td class="p-3 text-center no-print">
+                        <button onclick="removeItem(${index})" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            // 합계 업데이트
+            document.getElementById('total-price-display').innerText = formatVND(totalPrice);
+            
+            // 관리자용 분석 업데이트
+            document.getElementById('admin-total-cost').innerText = formatVND(totalCost);
+            document.getElementById('admin-total-price').innerText = formatVND(totalPrice);
+            const profit = totalPrice - totalCost;
+            document.getElementById('admin-profit').innerText = formatVND(profit) + ` (${((profit/totalPrice)*100).toFixed(1)}%)`;
+
+            lucide.createIcons();
+        }
+
+        function addItem() {
+            estimateItems.push({ type: 'TOUR', desc: '새 항목', unit: '회', price: 0, qty: 1, cost: 0 });
+            renderEstimateItems();
+        }
+
+        function removeItem(index) {
+            estimateItems.splice(index, 1);
+            renderEstimateItems();
+        }
+
+        function updateItem(index, field, value) {
+            if(field === 'qty' || field === 'price' || field === 'cost') value = Number(value);
+            estimateItems[index][field] = value;
+            renderEstimateItems();
+        }
+
+        function saveEstimate() {
+            const customerName = document.querySelector('input[value="임창호 님"]').value; // 데모용
+            const total = estimateItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            // 예약 리스트에 추가 (Mock)
+            bookings.unshift({
+                id: 'BK00' + (bookings.length + 1),
+                customer: customerName.replace(' 님',''),
+                tour: estimateItems[0].desc + ' 등',
+                date: '2026-02-01',
+                price: total,
+                status: 'Confirmed',
+                payment: 'Unpaid'
+            });
+            
+            alert('견적서가 저장되고 예약 리스트에 등록되었습니다.');
+            switchTab('bookings');
+        }
+
+        // 초기화
         lucide.createIcons();
-        
-        // 초기 탭 설정은 로그인 함수에서 처리됨
-
     </script>
 </body>
 </html>
-=======
-import React, { useState, useEffect } from 'react';
-import { Plane, Hotel, Car, Map, User, UserCheck, DollarSign, Calculator, FileText, Settings, Eye, Globe, Calendar, ChevronDown, ChevronUp, Plus, Trash2, Clock, Zap, Utensils, Printer, Save, Search, X, RefreshCw } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, addDoc, updateDoc, doc, getDocs, deleteDoc, query, orderBy } from 'firebase/firestore';
-
-// --- Firebase Configuration & Initialization ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-const KosviTravelApp = () => {
-  // --- State Management ---
-  const [user, setUser] = useState(null);
-  const [mode, setMode] = useState('admin'); // 'admin' or 'customer'
-  const [currency, setCurrency] = useState('VND'); 
-  const [rates, setRates] = useState({ VND: 1, KRW: 0.055, USD: 0.00004 });
-  
-  // 데이터 로딩 및 저장 상태
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [savedEstimates, setSavedEstimates] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
-
-  // 여행 데이터
-  const [data, setData] = useState({
-    id: null, // Firestore Document ID
-    customerName: '',
-    startDate: getTodayStr(),
-    endDate: getTodayStr(),
-    flight: {
-      dept: { from: '인천(ICN)', to: '호치민(SGN)', flightNo: '', depTime: '', arrTime: '' },
-      ret: { from: '호치민(SGN)', to: '인천(ICN)', flightNo: '', depTime: '', arrTime: '' }
-    },
-    schedule: [
-      {
-        date: getTodayStr(),
-        items: [
-          { id: Date.now(), time: '10:30', type: 'fast_track', title: 'VIP 패스트트랙 입국 수속', detail: '직원 미팅 후 신속 입국', cost: 500000 },
-          { id: Date.now()+1, time: '11:00', type: 'vehicle', title: '전용 픽업 (16인승 리무진)', detail: '공항 → 호텔 이동', cost: 1000000 },
-        ] 
-      }
-    ],
-    margin: 0, 
-  });
-
-  // --- Authentication ---
-  useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  // --- Firebase Operations ---
-
-  // 1. 저장하기 (Create or Update)
-  const handleSave = async () => {
-    if (!user) {
-      alert("로그인이 필요합니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!data.customerName) {
-      alert("고객명은 필수입니다.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const collectionRef = collection(db, 'artifacts', appId, 'users', user.uid, 'estimates');
-      
-      const saveData = {
-        ...data,
-        updatedAt: new Date().toISOString() // 저장 시간 기록
-      };
-      
-      if (data.id) {
-        // 기존 데이터 수정
-        const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'estimates', data.id);
-        await updateDoc(docRef, saveData);
-        alert(`[${data.customerName}] 님 견적이 수정되었습니다.`);
-      } else {
-        // 새 데이터 저장
-        const docRef = await addDoc(collectionRef, {
-          ...saveData,
-          createdAt: new Date().toISOString()
-        });
-        setData(prev => ({ ...prev, id: docRef.id })); // ID 업데이트
-        alert(`[${data.customerName}] 님 견적이 새로 저장되었습니다.`);
-      }
-    } catch (error) {
-      console.error("Error saving document: ", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 2. 불러오기 (Read All & Filter)
-  const fetchEstimates = async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const collectionRef = collection(db, 'artifacts', appId, 'users', user.uid, 'estimates');
-      const querySnapshot = await getDocs(collectionRef);
-      
-      const estimates = [];
-      querySnapshot.forEach((doc) => {
-        estimates.push({ id: doc.id, ...doc.data() });
-      });
-
-      // 최신순 정렬 (updatedAt 기준)
-      estimates.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
-      
-      setSavedEstimates(estimates);
-    } catch (error) {
-      console.error("Error fetching documents: ", error);
-      alert("목록을 불러오는데 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 3. 삭제하기
-  const handleDelete = async (e, id) => {
-    e.stopPropagation(); // 부모 클릭 방지
-    if (!window.confirm("정말 이 견적서를 삭제하시겠습니까?")) return;
-
-    try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'estimates', id));
-      // 목록에서 즉시 제거
-      setSavedEstimates(prev => prev.filter(item => item.id !== id));
-      if (data.id === id) {
-        // 현재 보고 있는 문서가 삭제되면 초기화
-        resetData();
-      }
-    } catch (error) {
-      alert("삭제 실패");
-    }
-  };
-
-  // 검색 모달 열기
-  const openSearchModal = () => {
-    setIsSearchOpen(true);
-    fetchEstimates();
-  };
-
-  // 견적서 선택 (Load)
-  const selectEstimate = (estimate) => {
-    // 기존 데이터 구조 호환성 체크 (flight 객체에 depTime 등이 없는 경우 대비)
-    const normalizedData = {
-        ...estimate,
-        flight: {
-            dept: { 
-                from: estimate.flight?.dept?.from || '', 
-                to: estimate.flight?.dept?.to || '', 
-                flightNo: estimate.flight?.dept?.flightNo || '', 
-                depTime: estimate.flight?.dept?.depTime || '', 
-                arrTime: estimate.flight?.dept?.arrTime || '' 
-            },
-            ret: { 
-                from: estimate.flight?.ret?.from || '', 
-                to: estimate.flight?.ret?.to || '', 
-                flightNo: estimate.flight?.ret?.flightNo || '', 
-                depTime: estimate.flight?.ret?.depTime || '', 
-                arrTime: estimate.flight?.ret?.arrTime || '' 
-            }
-        }
-    };
-    setData(normalizedData);
-    setIsSearchOpen(false);
-  };
-
-  // 데이터 초기화
-  const resetData = () => {
-    setData({
-      id: null,
-      customerName: '',
-      startDate: getTodayStr(),
-      endDate: getTodayStr(),
-      flight: {
-        dept: { from: '인천(ICN)', to: '호치민(SGN)', flightNo: '', depTime: '', arrTime: '' },
-        ret: { from: '호치민(SGN)', to: '인천(ICN)', flightNo: '', depTime: '', arrTime: '' }
-      },
-      schedule: [{
-        date: getTodayStr(),
-        items: [] 
-      }],
-      margin: 0, 
-    });
-  };
-
-  // --- Helpers ---
-  const getDayLabel = (dateStr) => {
-    if (!dateStr) return '';
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    return days[date.getDay()];
-  };
-
-  const getDuration = (start, end) => {
-    if (!start || !end) return '';
-    const s = new Date(start);
-    const e = new Date(end);
-    const diffTime = e - s;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const nights = diffDays > 0 ? diffDays - 1 : 0;
-    return `(${nights}박 ${diffDays}일)`;
-  };
-
-  // --- Logic for Edit ---
-  const handleDateChange = (field, value) => {
-    const newData = { ...data, [field]: value };
-    const start = new Date(newData.startDate);
-    const end = new Date(newData.endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    if (!isNaN(diffDays) && diffDays > 0 && diffDays < 60) {
-      const newSchedule = [];
-      for (let i = 0; i < diffDays; i++) {
-        const d = new Date(start);
-        d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().split('T')[0];
-        
-        const existingDay = data.schedule.find(s => s.date === dateStr);
-        if (existingDay) {
-          newSchedule.push(existingDay);
-        } else {
-          newSchedule.push({
-            date: dateStr,
-            items: [] 
-          });
-        }
-      }
-      newData.schedule = newSchedule;
-    }
-    setData(newData);
-  };
-
-  const addItem = (dayIndex) => {
-    const newSchedule = [...data.schedule];
-    newSchedule[dayIndex].items.push({
-      id: Date.now(),
-      time: '',
-      type: 'etc',
-      title: '',
-      detail: '',
-      cost: 0
-    });
-    setData({ ...data, schedule: newSchedule });
-  };
-
-  const removeItem = (dayIndex, itemIndex) => {
-    const newSchedule = [...data.schedule];
-    newSchedule[dayIndex].items.splice(itemIndex, 1);
-    setData({ ...data, schedule: newSchedule });
-  };
-
-  const updateItem = (dayIndex, itemIndex, field, value) => {
-    const newSchedule = [...data.schedule];
-    newSchedule[dayIndex].items[itemIndex][field] = value;
-    setData({ ...data, schedule: newSchedule });
-  };
-
-  const totalCost = data.schedule.reduce((acc, day) => {
-    const dayCost = day.items.reduce((dAcc, item) => dAcc + parseInt(item.cost || 0), 0);
-    return acc + dayCost;
-  }, 0);
-
-  const totalPriceVND = totalCost + parseInt(data.margin || 0);
-  const convertPrice = (priceVND) => priceVND * rates[currency];
-  const formatMoney = (amount, curr) => {
-    if (curr === 'VND') return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    if (curr === 'KRW') return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
-    if (curr === 'USD') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-    return amount;
-  };
-
-  const handleFlightChange = (type, field, value) => {
-    setData(prev => ({
-      ...prev,
-      flight: {
-        ...prev.flight,
-        [type]: { ...prev.flight[type], [field]: value }
-      }
-    }));
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const itemTypes = [
-    { id: 'fast_track', label: '패스트트랙', icon: Zap, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-    { id: 'flight', label: '항공', icon: Plane, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { id: 'hotel', label: '숙소', icon: Hotel, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { id: 'golf', label: '골프', icon: UserCheck, color: 'text-green-600', bg: 'bg-green-100' },
-    { id: 'vehicle', label: '차량', icon: Car, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { id: 'food', label: '식사', icon: Utensils, color: 'text-orange-600', bg: 'bg-orange-100' },
-    { id: 'tour', label: '투어', icon: Map, color: 'text-pink-600', bg: 'bg-pink-100' },
-    { id: 'guide', label: '가이드', icon: User, color: 'text-red-600', bg: 'bg-red-100' },
-    { id: 'etc', label: '기타', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-100' },
-  ];
-
-  // --- Sub Components ---
-
-  const ScheduleItemInput = ({ item, dayIndex, itemIndex }) => (
-    <div className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-gray-50 p-3 rounded-lg border border-gray-200 mb-2 animate-fade-in">
-        <div className="flex gap-2 w-full md:w-auto">
-          <input type="time" className="p-2 border rounded text-sm w-24" value={item.time} onChange={(e) => updateItem(dayIndex, itemIndex, 'time', e.target.value)} />
-          <select className="p-2 border rounded text-sm w-32" value={item.type} onChange={(e) => updateItem(dayIndex, itemIndex, 'type', e.target.value)}>
-            {itemTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-2">
-           <input type="text" placeholder="일정 제목" className="p-2 border rounded text-sm font-medium" value={item.title} onChange={(e) => updateItem(dayIndex, itemIndex, 'title', e.target.value)} />
-           <input type="text" placeholder="상세 내용" className="p-2 border rounded text-sm text-gray-600" value={item.detail} onChange={(e) => updateItem(dayIndex, itemIndex, 'detail', e.target.value)} />
-        </div>
-        <div className="flex gap-2 items-center w-full md:w-auto mt-2 md:mt-0">
-          <div className="relative flex-1 md:w-32">
-             <span className="absolute left-2 top-1.5 text-xs text-gray-400">₫</span>
-             <input type="number" placeholder="원가(VND)" className="w-full p-2 pl-6 border rounded text-sm text-right bg-white" value={item.cost} onChange={(e) => updateItem(dayIndex, itemIndex, 'cost', e.target.value)} />
-          </div>
-          <button onClick={() => removeItem(dayIndex, itemIndex)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
-        </div>
-    </div>
-  );
-
-  const DaySection = ({ day, index }) => {
-    const [isExpanded, setIsExpanded] = useState(true);
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6 overflow-hidden">
-        <div className="bg-blue-50 p-4 flex justify-between items-center cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
-          <div className="flex items-center gap-3">
-            <span className="bg-blue-900 text-white text-sm font-bold px-3 py-1 rounded-full">Day {index + 1}</span>
-            <span className="font-bold text-lg text-gray-800">{day.date} <span className="text-blue-600 text-base">({getDayLabel(day.date)})</span></span>
-            <span className="text-sm text-gray-500">({day.items.length}개 일정)</span>
-          </div>
-          {isExpanded ? <ChevronUp size={20} className="text-gray-500"/> : <ChevronDown size={20} className="text-gray-500"/>}
-        </div>
-        {isExpanded && (
-          <div className="p-4">
-            {day.items.map((item, idx) => (<ScheduleItemInput key={item.id} item={item} dayIndex={index} itemIndex={idx} />))}
-            <button onClick={() => addItem(index)} className="w-full py-3 mt-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"><Plus size={18}/> 일정 추가하기</button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 font-sans pb-20 print:bg-white print:pb-0">
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          .print-break-avoid { break-inside: avoid; }
-          body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .shadow-2xl { box-shadow: none !important; }
-          .max-w-4xl { max-width: 100% !important; }
-          main { padding: 0 !important; margin: 0 !important; }
-        }
-      `}</style>
-
-      {/* --- Search Modal (No Print) --- */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-start pt-20 no-print">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-fade-in relative">
-            <button onClick={() => setIsSearchOpen(false)} className="absolute right-4 top-4 text-gray-400 hover:text-black"><X size={24}/></button>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-900"><Search size={24}/> 기존 견적 불러오기</h3>
-            
-            <div className="mb-4">
-              <input 
-                type="text" 
-                placeholder="고객명으로 검색..." 
-                className="w-full p-3 border rounded-lg text-lg"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="max-h-[400px] overflow-y-auto space-y-2">
-              {isLoading ? (
-                <div className="text-center py-8 text-gray-500">불러오는 중...</div>
-              ) : savedEstimates.filter(est => est.customerName.includes(searchTerm)).length > 0 ? (
-                savedEstimates
-                  .filter(est => est.customerName.includes(searchTerm))
-                  .map(est => (
-                    <div 
-                      key={est.id} 
-                      onClick={() => selectEstimate(est)}
-                      className="p-4 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex justify-between items-center group"
-                    >
-                      <div>
-                        <div className="font-bold text-gray-800">{est.customerName} 님</div>
-                        <div className="text-xs text-gray-500">{est.startDate} ~ {est.endDate} ({est.updatedAt?.split('T')[0] || '날짜없음'} 저장됨)</div>
-                      </div>
-                      <button 
-                        onClick={(e) => handleDelete(e, est.id)}
-                        className="p-2 text-gray-300 hover:text-red-500 group-hover:block"
-                        title="삭제"
-                      >
-                        <Trash2 size={16}/>
-                      </button>
-                    </div>
-                  ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">검색 결과가 없습니다.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Top Navigation */}
-      <nav className="bg-blue-900 text-white p-4 sticky top-0 z-50 shadow-md no-print">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Globe className="text-yellow-400" />
-            <h1 className="text-xl font-bold tracking-wider hidden md:block">KOSVI TRAVEL</h1>
-            <h1 className="text-xl font-bold tracking-wider md:hidden">KOSVI</h1>
-          </div>
-          
-          <div className="flex items-center gap-2 md:gap-4">
-            {/* Admin Toolbar */}
-            {mode === 'admin' && (
-              <div className="flex items-center gap-2 bg-blue-800 p-1 rounded-lg mr-2">
-                <button 
-                  onClick={resetData}
-                  className="px-3 py-1.5 rounded hover:bg-blue-700 text-blue-200 text-xs flex items-center gap-1"
-                  title="새로 만들기"
-                >
-                  <RefreshCw size={14}/> <span className="hidden md:inline">초기화</span>
-                </button>
-                <button 
-                  onClick={openSearchModal}
-                  className="px-3 py-1.5 rounded hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1 bg-blue-600 shadow-sm"
-                >
-                  <Search size={14}/> 불러오기
-                </button>
-                <button 
-                  onClick={handleSave}
-                  className="px-3 py-1.5 rounded hover:bg-green-600 text-white text-xs font-bold flex items-center gap-1 bg-green-500 shadow-sm"
-                >
-                  {isLoading ? '저장 중...' : <><Save size={14}/> 저장</>}
-                </button>
-              </div>
-            )}
-
-            <div className="flex gap-2 bg-blue-800 p-1 rounded-lg">
-              <button 
-                onClick={() => setMode('admin')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'admin' ? 'bg-white text-blue-900 shadow' : 'text-blue-200 hover:text-white'}`}
-              >
-                <Settings size={14} className="inline mr-1"/> 관리자
-              </button>
-              <button 
-                onClick={() => setMode('customer')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'customer' ? 'bg-white text-blue-900 shadow' : 'text-blue-200 hover:text-white'}`}
-              >
-                <Eye size={14} className="inline mr-1"/> 고객용
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-5xl mx-auto p-4 md:p-8">
-        {/* Currency & Print Controls (No Print) */}
-        <div className="flex justify-end mb-6 items-center gap-3 no-print">
-            {mode === 'customer' && (
-              <button onClick={handlePrint} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors shadow-sm text-sm">
-                <Printer size={16} /> 인쇄 / PDF 저장
-              </button>
-            )}
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
-            <span className="text-gray-600 font-medium text-sm hidden md:inline">결제 통화:</span>
-            <div className="flex bg-white rounded-lg shadow-sm border p-1">
-                {['VND', 'KRW', 'USD'].map(c => (
-                    <button key={c} onClick={() => setCurrency(c)} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${currency === c ? 'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-50'}`}>{c}</button>
-                ))}
-            </div>
-        </div>
-
-        {mode === 'admin' ? (
-          <div className="space-y-6 animate-fade-in no-print">
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg shadow-sm flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-yellow-800 flex items-center gap-2"><Calculator size={18}/> 상세 견적 작성 모드</h3>
-                  <p className="text-sm text-yellow-700 mt-1">상단의 <strong>[불러오기]</strong>로 기존 견적을 찾거나 <strong>[저장]</strong>으로 현재 내용을 보관하세요.</p>
-                </div>
-                {data.id && (
-                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-bold">
-                    수정 모드 ({data.customerName})
-                  </div>
-                )}
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2"><Calendar size={20}/> 여행 개요</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1">
-                      <label className="block text-xs font-bold text-gray-500 mb-1">고객명/단체명 (검색 키워드)</label>
-                      <input type="text" className="w-full p-2 border rounded border-blue-300 bg-blue-50" value={data.customerName} onChange={(e) => setData({...data, customerName: e.target.value})} placeholder="예: 홍길동 (필수 입력)" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">시작일</label>
-                      <input type="date" className="w-full p-2 border rounded" value={data.startDate} onChange={(e) => handleDateChange('startDate', e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">종료일</label>
-                      <input type="date" className="w-full p-2 border rounded" value={data.endDate} onChange={(e) => handleDateChange('endDate', e.target.value)} />
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="text-lg font-bold mb-4 text-blue-900 flex items-center gap-2"><Plane size={20}/> 항공편 정보</h2>
-                <div className="space-y-4">
-                   <div className="flex flex-col md:flex-row gap-2 items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                      <span className="text-xs font-bold text-blue-600 w-16 text-center bg-blue-100 rounded px-1 py-1">출국</span>
-                      <input type="text" placeholder="출발지" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.from} onChange={(e) => handleFlightChange('dept', 'from', e.target.value)} />
-                      <span className="text-gray-400">→</span>
-                      <input type="text" placeholder="도착지" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.to} onChange={(e) => handleFlightChange('dept', 'to', e.target.value)} />
-                      <div className="flex flex-1 gap-2">
-                          <input type="text" placeholder="편명" className="w-20 p-2 border rounded text-sm" value={data.flight.dept.flightNo} onChange={(e) => handleFlightChange('dept', 'flightNo', e.target.value)} />
-                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.depTime} onChange={(e) => handleFlightChange('dept', 'depTime', e.target.value)} />
-                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.dept.arrTime} onChange={(e) => handleFlightChange('dept', 'arrTime', e.target.value)} />
-                      </div>
-                   </div>
-                   <div className="flex flex-col md:flex-row gap-2 items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                      <span className="text-xs font-bold text-blue-600 w-16 text-center bg-blue-100 rounded px-1 py-1">귀국</span>
-                      <input type="text" placeholder="출발지" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.from} onChange={(e) => handleFlightChange('ret', 'from', e.target.value)} />
-                      <span className="text-gray-400">→</span>
-                      <input type="text" placeholder="도착지" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.to} onChange={(e) => handleFlightChange('ret', 'to', e.target.value)} />
-                      <div className="flex flex-1 gap-2">
-                          <input type="text" placeholder="편명" className="w-20 p-2 border rounded text-sm" value={data.flight.ret.flightNo} onChange={(e) => handleFlightChange('ret', 'flightNo', e.target.value)} />
-                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.depTime} onChange={(e) => handleFlightChange('ret', 'depTime', e.target.value)} />
-                          <input type="time" className="flex-1 p-2 border rounded text-sm" value={data.flight.ret.arrTime} onChange={(e) => handleFlightChange('ret', 'arrTime', e.target.value)} />
-                      </div>
-                   </div>
-                </div>
-            </div>
-
-            <div>
-               <h2 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2"><FileText size={20}/> 상세 일정 만들기</h2>
-               {data.schedule.map((day, index) => (<DaySection key={day.date} day={day} index={index} />))}
-            </div>
-
-            <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg mt-8">
-                <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign/> 비용 정산</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3 text-sm text-gray-300">
-                        <div className="flex justify-between"><span>총 원가 합계 (VND):</span><span className="font-mono text-gray-400">{formatMoney(totalCost, 'VND')}</span></div>
-                        <div className="flex justify-between items-center">
-                            <span>마진(이익금) 추가:</span>
-                            <div className="flex items-center gap-2 bg-gray-700 rounded p-1">
-                                <span className="text-xs text-gray-400 pl-1">+</span>
-                                <input type="number" className="bg-transparent text-right text-white w-28 outline-none font-bold" value={data.margin} onChange={(e) => setData({...data, margin: parseInt(e.target.value) || 0})} />
-                                <span className="text-xs pr-1">VND</span>
-                            </div>
-                        </div>
-                         <div className="border-t border-gray-600 pt-3 flex justify-between text-yellow-400 font-bold text-xl"><span>최종 판매가 (VND):</span><span>{formatMoney(totalPriceVND, 'VND')}</span></div>
-                    </div>
-                    <div className="bg-gray-700 p-4 rounded-lg">
-                         <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">환율 설정</h3>
-                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><label className="block text-gray-400 mb-1">KRW 환율</label><input type="number" step="0.001" className="w-full p-2 rounded bg-gray-600 text-white border border-gray-500" value={rates.KRW} onChange={(e) => setRates({...rates, KRW: parseFloat(e.target.value)})} /></div>
-                            <div><label className="block text-gray-400 mb-1">USD 환율</label><input type="number" step="0.00001" className="w-full p-2 rounded bg-gray-600 text-white border border-gray-500" value={rates.USD} onChange={(e) => setRates({...rates, USD: parseFloat(e.target.value)})} /></div>
-                         </div>
-                    </div>
-                </div>
-            </div>
-          </div>
-        ) : (
-          <div className="animate-fade-in bg-white shadow-2xl rounded-xl overflow-hidden max-w-4xl mx-auto border border-gray-200 print:shadow-none print:border-none print:w-full print:max-w-none">
-            {/* Customer Header */}
-            <div className="bg-blue-900 text-white p-8 relative overflow-hidden print:bg-white print:text-black print:p-0 print:mb-6 print:border-b-2 print:border-blue-900">
-                <div className="absolute top-0 right-0 p-8 opacity-10 print:hidden"><Plane size={150} /></div>
-                <div className="relative z-10 text-center md:text-left">
-                    <div className="inline-block border-2 border-yellow-400 px-3 py-1 rounded text-yellow-400 text-xs font-bold tracking-widest mb-2 print:border-black print:text-black">PREMIUM TRAVEL</div>
-                    <h2 className="text-4xl font-extrabold tracking-tight mb-2 font-serif">TRAVEL ITINERARY</h2>
-                    <p className="text-blue-200 font-medium text-lg tracking-wide print:text-gray-600">KOSVI TRAVEL & AGENCY</p>
-                    <div className="mt-8 flex flex-col md:flex-row gap-8 pt-6 border-t border-blue-800 print:border-gray-300 print:mt-4 print:pt-4">
-                        <div><span className="block text-blue-400 text-xs uppercase mb-1 print:text-gray-500">Guest Name</span><span className="font-bold text-2xl">{data.customerName ? `${data.customerName} 님` : '고객님'}</span></div>
-                         <div><span className="block text-blue-400 text-xs uppercase mb-1 print:text-gray-500">Period</span><span className="font-bold text-xl">{data.startDate} ~ {data.endDate}<span className="ml-2 text-lg font-medium opacity-80 print:text-black">{getDuration(data.startDate, data.endDate)}</span></span></div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Itinerary Body */}
-            <div className="p-8 space-y-10 print:p-4 print:space-y-6">
-                <section className="print-break-avoid">
-                    <h3 className="text-blue-900 font-bold border-b-2 border-blue-900 pb-3 mb-6 flex items-center gap-2 text-lg"><Plane className="text-blue-600"/> 항공 여정 (Flight Info)</h3>
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 bg-gray-50 rounded-xl p-5 border border-gray-100 flex items-center gap-4 print:border-gray-300 print:bg-white">
-                             <div className="bg-blue-100 p-3 rounded-full text-blue-600 font-bold text-xs print:border print:border-gray-300">DEPART</div>
-                             <div className="flex-1">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="font-bold text-xl text-gray-800">{data.flight.dept.from}</span>
-                                    <span className="text-gray-300 px-2">✈</span>
-                                    <span className="font-bold text-xl text-gray-800">{data.flight.dept.to}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-blue-600 font-medium text-sm print:text-black">
-                                    <span className="bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{data.flight.dept.flightNo || '편명 미정'}</span>
-                                    <span>{data.flight.dept.depTime || '--:--'}</span>
-                                    <span>→</span>
-                                    <span>{data.flight.dept.arrTime || '--:--'}</span>
-                                </div>
-                             </div>
-                        </div>
-                        <div className="flex-1 bg-gray-50 rounded-xl p-5 border border-gray-100 flex items-center gap-4 print:border-gray-300 print:bg-white">
-                             <div className="bg-blue-100 p-3 rounded-full text-blue-600 font-bold text-xs print:border print:border-gray-300">RETURN</div>
-                             <div className="flex-1">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="font-bold text-xl text-gray-800">{data.flight.ret.from}</span>
-                                    <span className="text-gray-300 px-2">✈</span>
-                                    <span className="font-bold text-xl text-gray-800">{data.flight.ret.to}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-blue-600 font-medium text-sm print:text-black">
-                                    <span className="bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{data.flight.ret.flightNo || '편명 미정'}</span>
-                                    <span>{data.flight.ret.depTime || '--:--'}</span>
-                                    <span>→</span>
-                                    <span>{data.flight.ret.arrTime || '--:--'}</span>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section>
-                    <h3 className="text-blue-900 font-bold border-b-2 border-blue-900 pb-3 mb-8 flex items-center gap-2 text-lg print:mb-4"><FileText className="text-blue-600"/> 상세 일정표 (Daily Schedule)</h3>
-                    <div className="space-y-12 print:space-y-8">
-                        {data.schedule.map((day, idx) => {
-                            const sortedItems = [...day.items].sort((a, b) => a.time.localeCompare(b.time));
-                            return (
-                                <div key={day.date} className="relative pl-4 md:pl-0 print:pl-0 print-break-avoid">
-                                    <div className="flex items-center gap-4 mb-6 sticky top-0 bg-white z-10 py-2 print:static print:mb-2 print:py-0">
-                                        <div className="bg-blue-900 text-white w-12 h-12 rounded-xl flex flex-col items-center justify-center shadow-lg print:shadow-none print:border print:border-black print:bg-white print:text-black"><span className="text-[10px] font-light opacity-80 print:font-bold">DAY</span><span className="text-xl font-bold leading-none">{idx + 1}</span></div>
-                                        <div><h4 className="font-bold text-xl text-gray-800">{day.date} <span className="text-blue-600 print:text-black">({getDayLabel(day.date)})</span></h4></div>
-                                    </div>
-                                    <div className="space-y-4 ml-6 border-l-2 border-gray-100 pl-8 pb-4 relative print:border-l-2 print:border-gray-300">
-                                        {sortedItems.length > 0 ? sortedItems.map((item) => {
-                                            const typeInfo = itemTypes.find(t => t.id === item.type) || itemTypes[itemTypes.length - 1];
-                                            return (
-                                                <div key={item.id} className="relative group print-break-avoid">
-                                                    <div className={`absolute -left-[43px] top-1 w-6 h-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 ${typeInfo.bg} ${typeInfo.color} print:border-gray-400 print:bg-white print:text-black`}><div className="w-2 h-2 bg-current rounded-full"></div></div>
-                                                    <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-6 bg-white hover:bg-gray-50 p-3 rounded-lg transition-colors print:p-1 print:hover:bg-white">
-                                                        <div className="md:w-16 pt-1 flex items-center gap-1 text-gray-500 font-mono text-sm font-semibold print:text-black">{item.time || '--:--'}</div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-1"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${typeInfo.bg} ${typeInfo.color} print:border print:border-gray-300 print:bg-white print:text-black`}>{typeInfo.label}</span><h5 className="font-bold text-gray-800">{item.title}</h5></div>
-                                                            {item.detail && (<p className="text-sm text-gray-500 leading-relaxed pl-1 print:text-black">{item.detail}</p>)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }) : (<div className="text-gray-300 italic text-sm py-4 print:hidden">등록된 일정이 없습니다.</div>)}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
-
-                <div className="mt-12 bg-blue-900 rounded-xl p-8 text-white shadow-xl relative overflow-hidden print:bg-white print:text-black print:border-t-2 print:border-black print:shadow-none print:rounded-none print:mt-8 print:pt-4 print-break-avoid">
-                     <div className="absolute -right-10 -bottom-10 opacity-10 transform rotate-12 print:hidden"><DollarSign size={200}/></div>
-                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
-                        <div><h4 className="text-blue-300 font-bold text-sm uppercase tracking-widest mb-1 print:text-black">Total Estimated Cost</h4><p className="text-xs text-blue-200 opacity-80 print:text-gray-600">* 포함사항: 항공, 숙박, 차량, 가이드, 전 일정 식사 및 투어 (불포함 사항 별도 문의)</p></div>
-                        <div className="text-right"><span className="text-5xl font-extrabold tracking-tight">{formatMoney(convertPrice(totalPriceVND), currency)}</span>{currency !== 'VND' && (<p className="text-sm text-blue-300 mt-2 font-mono print:text-black">{formatMoney(totalPriceVND, 'VND')} (Based on Rate)</p>)}</div>
-                     </div>
-                </div>
-
-                <div className="mt-12 text-center text-gray-400 text-xs border-t pt-8 leading-relaxed print:text-black print:mt-6 print:pt-4">
-                    <p className="font-bold text-gray-600 text-sm mb-2 print:text-black">KOSVI TRAVEL & AGENCY</p>
-                    <p>Contact: 077 890 1861 (법인장 허창수) | Email: admin@daewoongvina.com</p>
-                    <p>Address: Ho Chi Minh City, Vietnam</p>
-                    <p className="mt-4 opacity-50">Copyright © 2026 KOSVI TRAVEL. All rights reserved.</p>
-                </div>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-};
-
-export default KosviTravelApp;
->>>>>>> 4992a0c3b7a2075fbe7f56b094e6ce14c096f3ec
