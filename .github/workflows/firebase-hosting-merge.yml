@@ -2,17 +2,17 @@ name: Deploy to Firebase Hosting on merge
 on:
   push:
     branches:
-      - main  # 브랜치 이름을 정확히 main으로 고쳤습니다.
+      - main
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # 빌드 과정이 필요 없는 단순 HTML 구조라면 아래 run 줄은 주석(#) 처리해 두었습니다.
-      # - run: npm ci && npm run build 
+      # 빌드 과정이 없는 단순 HTML이므로 아래 줄은 주석(#) 처리했습니다.
+      # - run: npm ci && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI }}
           channelId: live
-          projectId: kosvi-manager-xxxx # 법인장님의 실제 프로젝트 ID가 자동으로 들어가 있을 겁니다. 이 부분은 기존 파일의 ID를 유지하세요.
+          projectId: kosvi-manager-872f2 # 법인장님의 프로젝트 ID입니다.
