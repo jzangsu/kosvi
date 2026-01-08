@@ -15,3 +15,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KOSVI }}
           channelId: live
           projectId: kosvi-manager-872f2
+          
